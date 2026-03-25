@@ -1,0 +1,22 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: cdee-db
+    environment:
+      POSTGRES_DB: cdee
+      POSTGRES_USER: cdee
+      POSTGRES_PASSWORD: cdee
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/db-init:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7
+    container_name: cdee-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

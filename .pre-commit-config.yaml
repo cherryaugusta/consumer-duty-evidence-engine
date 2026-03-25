@@ -3,14 +3,20 @@ repos:
     rev: v0.11.8
     hooks:
       - id: ruff
+        args: [--fix]
+        exclude: ^backend/.*/migrations/.*\.py$
       - id: ruff-format
+        exclude: ^backend/.*/migrations/.*\.py$
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
+        exclude: ^backend/.*/migrations/.*\.py$
 
   - repo: https://github.com/psf/black
     rev: 25.1.0
     hooks:
       - id: black
+        args: [--target-version=py313]
+        exclude: ^backend/.*/migrations/.*\.py$
