@@ -1,6 +1,7 @@
 from celery import shared_task
 
 from apps.artifacts.models import ParseStatus, SourceArtifact
+from apps.extraction.tasks import extract_case_task
 from apps.parsing.services import parse_artifact_to_sections
 
 
@@ -17,6 +18,8 @@ def parse_artifact_task(self, artifact_id: str):
 
         artifact.parse_status = ParseStatus.PARSED
         artifact.save(update_fields=["parse_status"])
+
+        extract_case_task.delay(str(artifact.case_id))
     except Exception:
         artifact.parse_status = ParseStatus.FAILED
         artifact.parse_error_code = "parse_error"

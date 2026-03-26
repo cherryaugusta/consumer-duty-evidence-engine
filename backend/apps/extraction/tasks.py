@@ -1,6 +1,13 @@
 from celery import shared_task
 
+from apps.cases.models import ReviewCase
+from apps.extraction.services import extract_claims_for_case
 
-@shared_task(bind=True, max_retries=2)
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=5, max_retries=2)
 def extract_case_task(self, case_id: str):
-    return {"case_id": case_id, "stage": "extraction", "status": "placeholder"}
+    case = ReviewCase.objects.get(pk=case_id)
+
+    extract_claims_for_case(case)
+
+    return {"case_id": str(case.id)}
