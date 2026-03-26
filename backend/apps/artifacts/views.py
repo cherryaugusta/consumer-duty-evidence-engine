@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from apps.artifacts.serializers import ArtifactUploadSerializer, SourceArtifactSerializer
 from apps.artifacts.services import create_artifact_from_upload
 from apps.cases.models import ReviewCase
+from apps.parsing.tasks import parse_artifact_task
 
 
 class CaseArtifactListCreateView(APIView):
@@ -31,6 +32,8 @@ class CaseArtifactListCreateView(APIView):
             uploaded_by=request.user,
             correlation_id=getattr(request, "correlation_id", None),
         )
+
+        parse_artifact_task.delay(str(artifact.id))
 
         response_serializer = SourceArtifactSerializer(artifact)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
