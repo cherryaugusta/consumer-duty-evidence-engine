@@ -1,53 +1,43 @@
-from rest_framework import generics
-from rest_framework.parsers import MultiPartParser
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from apps.artifacts.serializers import ArtifactUploadSerializer, SourceArtifactSerializer
+from apps.artifacts.services import create_artifact_from_upload
 from apps.cases.models import ReviewCase
 
-from .models import DocumentSection, SourceArtifact
-from .serializers import (
-    DocumentSectionSerializer,
-    SourceArtifactCreateSerializer,
-    SourceArtifactSerializer,
-)
-from .services import create_artifact_from_upload
 
+class CaseArtifactListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
-class ArtifactListCreateView(generics.ListCreateAPIView):
-    parser_classes = [MultiPartParser]
-
-    def get_queryset(self):
-        return SourceArtifact.objects.filter(case_id=self.kwargs["pk"]).order_by("-uploaded_at")
-
-    def get_serializer_class(self):
-        if self.request.method == "POST":
-            return SourceArtifactCreateSerializer
-        return SourceArtifactSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    @extend_schema(
+        request=ArtifactUploadSerializer,
+        responses={201: SourceArtifactSerializer},
+    )
+    def post(self, request, id):
+        case = get_object_or_404(ReviewCase, id=id)
+        serializer = ArtifactUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        case = ReviewCase.objects.get(pk=self.kwargs["pk"])
         artifact = create_artifact_from_upload(
             case=case,
-            artifact_type=serializer.validated_data["artifact_type"],
             uploaded_file=serializer.validated_data["file"],
+            artifact_type=serializer.validated_data["artifact_type"],
+            uploaded_by=request.user,
+            correlation_id=getattr(request, "correlation_id", None),
         )
 
-        output = SourceArtifactSerializer(artifact, context=self.get_serializer_context())
-        return Response(output.data, status=201)
+        response_serializer = SourceArtifactSerializer(artifact)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
-
-class ArtifactDetailView(generics.RetrieveAPIView):
-    queryset = SourceArtifact.objects.all()
-    serializer_class = SourceArtifactSerializer
-
-
-class ArtifactSectionsView(generics.ListAPIView):
-    serializer_class = DocumentSectionSerializer
-
-    def get_queryset(self):
-        return DocumentSection.objects.filter(artifact_id=self.kwargs["pk"]).order_by(
-            "section_index"
-        )
+    @extend_schema(responses={200: SourceArtifactSerializer(many=True)})
+    def get(self, request, id):
+        case = get_object_or_404(ReviewCase, id=id)
+        artifacts = case.artifacts.all().order_by("-uploaded_at")
+        serializer = SourceArtifactSerializer(artifacts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

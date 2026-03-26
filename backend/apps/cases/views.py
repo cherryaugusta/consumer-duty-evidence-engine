@@ -40,13 +40,20 @@ class CaseListCreateView(generics.ListCreateAPIView):
             return ReviewCaseCreateSerializer
         return ReviewCaseSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        case = serializer.save(
             reference_code=f"CDEE-{uuid.uuid4().hex[:12].upper()}",
             status=CaseStatus.INGESTION_PENDING,
             review_status=ReviewStatus.UNASSIGNED,
             correlation_id=uuid.uuid4().hex,
         )
+
+        output = ReviewCaseSerializer(case, context={"request": request})
+        headers = self.get_success_headers(output.data)
+        return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class CaseDetailView(generics.RetrieveUpdateAPIView):

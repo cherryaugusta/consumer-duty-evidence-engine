@@ -2,10 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 BASE_DIR = Path(__file__).resolve().parents[3]
-load_dotenv(BASE_DIR / ".env", override=True)
 
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
@@ -79,11 +76,11 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "cdee"),
-        "USER": os.getenv("POSTGRES_USER", "cdee"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "cdee"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "NAME": "cdee",
+        "USER": "cdee",
+        "PASSWORD": "cdee",
+        "HOST": "127.0.0.1",
+        "PORT": "55432",
     }
 }
 
@@ -131,11 +128,12 @@ SIMPLE_JWT = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Consumer Duty Evidence Engine API",
     "DESCRIPTION": (
-        "Portfolio-grade simulation of an AI-assisted evidence review workflow "
-        "inspired by Consumer Duty expectations."
+        "Portfolio-grade simulation of an AI-assisted evidence review "
+        "workflow inspired by Consumer Duty expectations."
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
