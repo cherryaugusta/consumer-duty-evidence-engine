@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import (
+from apps.reviews.views import (
     ReviewTaskApproveView,
     ReviewTaskAssignView,
     ReviewTaskEscalateView,

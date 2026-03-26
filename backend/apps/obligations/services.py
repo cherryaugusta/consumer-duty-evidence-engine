@@ -1,25 +1,33 @@
 from apps.extraction.models import Claim, ClaimType
-from apps.obligations.models import ConsumerDutyOutcome, EvidenceLink, LinkType, OutcomeCode
+from apps.obligations.models import ConsumerDutyOutcome, EvidenceLink, LinkType
 
 
 def _map_claim_to_outcomes(claim: Claim):
-    mappings = []
+    """
+    Map claim types to EXISTING DB codes (must match exactly).
+    """
 
     if claim.claim_type == ClaimType.UNCLEAR_FEE:
-        mappings = [OutcomeCode.PRICE_VALUE, OutcomeCode.CONSUMER_UNDERSTANDING]
+        return ["fair_value", "consumer_understanding"]
 
     elif claim.claim_type == ClaimType.SUPPORT_DELAY:
-        mappings = [OutcomeCode.CONSUMER_SUPPORT]
+        return ["consumer_support"]
 
     elif claim.claim_type == ClaimType.INADEQUATE_DISCLOSURE:
-        mappings = [OutcomeCode.CONSUMER_UNDERSTANDING]
+        return ["consumer_understanding"]
 
-    return mappings
+    return []
 
 
 def map_case_outcomes(case):
+    """
+    Create EvidenceLink records from claims → outcomes.
+    Safe: skips missing outcomes instead of crashing Celery.
+    """
+
     claims = Claim.objects.filter(case=case)
 
+    # clear old links
     EvidenceLink.objects.filter(case=case).delete()
 
     created_links = []
@@ -28,7 +36,11 @@ def map_case_outcomes(case):
         outcome_codes = _map_claim_to_outcomes(claim)
 
         for code in outcome_codes:
-            outcome = ConsumerDutyOutcome.objects.get(code=code)
+            try:
+                outcome = ConsumerDutyOutcome.objects.get(code=code)
+            except ConsumerDutyOutcome.DoesNotExist:
+                print(f"WARNING: Missing outcome code: {code}")
+                continue
 
             link = EvidenceLink.objects.create(
                 case=case,
