@@ -1,6 +1,6 @@
 import json
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import jsonschema
@@ -37,7 +37,12 @@ def validate_json(data, schema, source_path: Path):
 
 def collect_eval_files():
     files = []
-    for dataset_type in ["golden_cases", "adversarial_cases", "routing_cases", "citation_cases"]:
+    for dataset_type in [
+        "golden_cases",
+        "adversarial_cases",
+        "routing_cases",
+        "citation_cases",
+    ]:
         dataset_dir = DATASETS_DIR / dataset_type
         if not dataset_dir.exists():
             continue
@@ -48,9 +53,11 @@ def collect_eval_files():
 def run_placeholder_evaluation(eval_cases):
     """
     Placeholder evaluator.
+
     For now:
-    - assumes all expectations are "met"
+    - assumes all expectations are met
     - returns perfect metrics
+
     This will be replaced later with real pipeline calls.
     """
 
@@ -80,7 +87,7 @@ def run_placeholder_evaluation(eval_cases):
 
 def build_report(metrics):
     report = {
-        "run_label": f"local-run-{datetime.utcnow().isoformat()}",
+        "run_label": f"local-run-{datetime.now(UTC).isoformat()}",
         "summary_metrics": metrics,
         "thresholds": {
             "mapping_accuracy_min": 0.8,
@@ -113,7 +120,6 @@ def main():
     print("✅ All eval cases passed schema validation")
 
     metrics = run_placeholder_evaluation(eval_cases)
-
     report = build_report(metrics)
 
     validate_json(report, eval_report_schema, Path("generated-report"))
