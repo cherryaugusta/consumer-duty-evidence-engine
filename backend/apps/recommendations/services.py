@@ -62,6 +62,14 @@ def _has_claim_type(case: ReviewCase, claim_type: str) -> bool:
     return case.claims.filter(claim_type=claim_type).exists()
 
 
+def _all_other_claims_are_benign(case: ReviewCase) -> bool:
+    other_claims = case.claims.filter(claim_type=ClaimType.OTHER)
+    if not other_claims.exists():
+        return False
+
+    return all("no issues" in (claim.claim_text or "").lower() for claim in other_claims)
+
+
 def _recommended_action(case: ReviewCase, distribution: dict[str, int]) -> str:
     contradiction_count = case.contradiction_flags.count()
     requires_review_count = case.assessments.filter(requires_review=True).count()
@@ -73,7 +81,7 @@ def _recommended_action(case: ReviewCase, distribution: dict[str, int]) -> str:
     if assessment_count == 0:
         return RecommendedAction.REQUEST_MORE_EVIDENCE
 
-    if _has_claim_type(case, ClaimType.OTHER):
+    if _has_claim_type(case, ClaimType.OTHER) and not _all_other_claims_are_benign(case):
         return RecommendedAction.REVIEW
 
     if _has_claim_type(case, ClaimType.MISLEADING_EXPLANATION):
@@ -244,7 +252,7 @@ def generate_case_recommendation(*, case: ReviewCase) -> Recommendation:
             ),
             "confidence": confidence,
             "citation_count": citation_count,
-            "model_version": "rules-recommendation-v2",
+            "model_version": "rules-recommendation-v3",
             "prompt_version": prompt_version,
         },
     )

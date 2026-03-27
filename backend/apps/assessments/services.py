@@ -50,6 +50,11 @@ def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
     claim = evidence_link.claim
     claim_text = claim.claim_text.lower()
     section_text = (evidence_link.section.text if evidence_link.section else "").lower()
+    artifact_type = (
+        evidence_link.section.artifact.artifact_type
+        if evidence_link.section and evidence_link.section.artifact
+        else None
+    )
 
     if _contains_any(
         section_text,
@@ -126,6 +131,13 @@ def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
                 "response times",
             ],
         ):
+            if artifact_type in {"support_transcript", "internal_note"}:
+                return (
+                    AssessmentStatus.SUPPORTED,
+                    False,
+                    "Operational evidence corroborates the support delay claim.",
+                )
+
             return (
                 AssessmentStatus.WEAK_SUPPORT,
                 True,
@@ -285,7 +297,7 @@ def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
 def assess_case_support(case) -> list[SupportAssessment]:
     evidence_links = (
         EvidenceLink.objects.filter(case=case)
-        .select_related("claim", "outcome", "section")
+        .select_related("claim", "outcome", "section", "section__artifact")
         .order_by("claim", "outcome")
     )
 
@@ -305,7 +317,7 @@ def assess_case_support(case) -> list[SupportAssessment]:
             requires_review=requires_review,
             assessment_reason=reason,
             rules_triggered=[f"link_type:{link.link_type}", f"status:{status}"],
-            model_version="rules-v3",
+            model_version="rules-v4",
         )
         created_assessments.append(assessment)
 
