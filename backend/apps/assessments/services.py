@@ -4,6 +4,7 @@ from apps.assessments.models import (
     ContradictionType,
     SupportAssessment,
 )
+from apps.extraction.models import ClaimType
 from apps.obligations.models import EvidenceLink, OutcomeCode
 
 
@@ -11,8 +12,43 @@ def _contains_any(text: str, phrases: list[str]) -> bool:
     return any(phrase in text for phrase in phrases)
 
 
+def _case_has_support_hours_conflict(case) -> bool:
+    section_texts = [
+        text.lower() for text in case.artifacts.values_list("sections__text", flat=True) if text
+    ]
+
+    has_extended_hours = any(
+        _contains_any(
+            text,
+            [
+                "24/7",
+                "seven days",
+                "7 days",
+                "available seven days",
+                "available 24/7",
+            ],
+        )
+        for text in section_texts
+    )
+
+    has_limited_hours = any(
+        _contains_any(
+            text,
+            [
+                "monday to friday",
+                "support hours",
+                "9am to 5pm",
+            ],
+        )
+        for text in section_texts
+    )
+
+    return has_extended_hours and has_limited_hours
+
+
 def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
-    claim_text = evidence_link.claim.claim_text.lower()
+    claim = evidence_link.claim
+    claim_text = claim.claim_text.lower()
     section_text = (evidence_link.section.text if evidence_link.section else "").lower()
 
     if _contains_any(
@@ -30,27 +66,55 @@ def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
             "Evidence appears stale or outdated.",
         )
 
-    if _contains_any(
-        claim_text + " " + section_text,
-        [
-            "24/7",
-            "seven days",
-            "monday to friday",
-            "support hours",
-        ],
-    ) and (
-        ("24/7" in claim_text and "monday to friday" in section_text)
-        or ("seven days" in claim_text and "monday to friday" in section_text)
-        or ("24/7" in section_text and "monday to friday" in claim_text)
-        or ("seven days" in section_text and "monday to friday" in claim_text)
+    if claim.claim_type == ClaimType.MISLEADING_EXPLANATION and _case_has_support_hours_conflict(
+        evidence_link.case
     ):
         return (
             AssessmentStatus.CONTRADICTORY_SUPPORT,
             True,
-            "Conflicting service availability statements were detected.",
+            "Conflicting service availability statements were detected across the case.",
         )
 
+    if claim.claim_type == ClaimType.OTHER:
+        if _contains_any(
+            claim_text,
+            [
+                "not right",
+                "something was not right",
+                "cannot clearly explain",
+                "vaguely mentions",
+                "ambiguous",
+            ],
+        ):
+            return (
+                AssessmentStatus.WEAK_SUPPORT,
+                True,
+                "Ambiguous customer concern detected and routed for review.",
+            )
+
+        if "no issues" in claim_text:
+            return (
+                AssessmentStatus.SUPPORTED,
+                False,
+                "Customer statement indicates no material concern.",
+            )
+
     if evidence_link.outcome.code == OutcomeCode.CONSUMER_SUPPORT:
+        if _contains_any(
+            claim_text,
+            [
+                "possible confusion",
+                "possible confusion about terms",
+                "little detail",
+                "vaguely mentions",
+            ],
+        ):
+            return (
+                AssessmentStatus.WEAK_SUPPORT,
+                True,
+                "Low-detail concern detected and routed for review.",
+            )
+
         if _contains_any(
             claim_text + " " + section_text,
             [
@@ -84,6 +148,35 @@ def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
             )
 
     if evidence_link.outcome.code == OutcomeCode.CONSUMER_UNDERSTANDING:
+        if _contains_any(
+            claim_text,
+            [
+                "possible confusion",
+                "possible confusion about terms",
+                "confusion about terms",
+                "little detail",
+            ],
+        ):
+            return (
+                AssessmentStatus.WEAK_SUPPORT,
+                True,
+                "Low-confidence understanding concern detected and routed for review.",
+            )
+
+        if "fee" in claim_text and _contains_any(
+            section_text,
+            [
+                "details available in full terms",
+                "terms",
+                "fees may apply",
+            ],
+        ):
+            return (
+                AssessmentStatus.WEAK_SUPPORT,
+                True,
+                "Fee evidence exists but disclosure clarity remains weak.",
+            )
+
         if "fee" in claim_text and not _contains_any(
             section_text,
             [
@@ -92,6 +185,9 @@ def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
                 "explained and accepted",
                 "all fees and conditions were clearly explained",
                 "customer confirmed understanding",
+                "details available in full terms",
+                "terms",
+                "fees may apply",
             ],
         ):
             return (
@@ -116,6 +212,21 @@ def _determine_assessment_status(evidence_link) -> tuple[str, bool, str]:
             )
 
     if evidence_link.outcome.code == OutcomeCode.PRICE_VALUE:
+        if _contains_any(
+            claim_text,
+            [
+                "possible confusion",
+                "possible confusion about terms",
+                "confusion about terms",
+                "little detail",
+            ],
+        ):
+            return (
+                AssessmentStatus.WEAK_SUPPORT,
+                True,
+                "Low-confidence fee concern detected and routed for review.",
+            )
+
         if "fee" in claim_text and _contains_any(
             section_text,
             [
@@ -194,7 +305,7 @@ def assess_case_support(case) -> list[SupportAssessment]:
             requires_review=requires_review,
             assessment_reason=reason,
             rules_triggered=[f"link_type:{link.link_type}", f"status:{status}"],
-            model_version="rules-v2",
+            model_version="rules-v3",
         )
         created_assessments.append(assessment)
 
