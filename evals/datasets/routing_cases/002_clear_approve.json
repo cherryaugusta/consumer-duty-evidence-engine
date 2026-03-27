@@ -1,0 +1,31 @@
+{
+  "case_id": "eval-route-002-clear-approve",
+  "scenario_type": "clear_supported_case",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer confirmed understanding of all terms and had no issues."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "All fees and conditions were clearly explained and acknowledged by the customer."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "other",
+      "claim_text_contains": "no issues"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_understanding"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "case_id": "eval-adv-001-messy-text",
+  "scenario_type": "adversarial_formatting",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "FEE??? not told...customer confused!!! £5??? monthly??? unclear??"
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "missing_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    }
+  ]
+}
