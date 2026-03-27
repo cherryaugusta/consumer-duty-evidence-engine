@@ -180,7 +180,8 @@ def build_seed_cases(users: dict):
                     "filename": "demo_001_complaint.txt",
                     "text": (
                         "Customer states they were charged a monthly fee that was not "
-                        "clearly explained during onboarding."
+                        "clearly explained during onboarding and that they only noticed "
+                        "the charge after the first statement arrived."
                     ),
                 },
                 {
@@ -224,26 +225,337 @@ def build_seed_cases(users: dict):
         },
         {
             "reference_code": "DEMO-003",
-            "title": "Seeded demo: strong consumer support case",
-            "case_type": CaseType.SUPPORT_REVIEW,
-            "priority": Priority.MEDIUM,
+            "title": "Seeded demo: product suitability concern",
+            "case_type": CaseType.COMPLAINT_REVIEW,
+            "priority": Priority.HIGH,
             "submitted_by": users["analyst_2"],
             "artifacts": [
                 {
                     "artifact_type": "complaint",
                     "filename": "demo_003_complaint.txt",
                     "text": (
-                        "Customer reported a service issue but confirmed the "
-                        "support team resolved it quickly and clearly."
+                        "Customer says the product was presented as suitable for "
+                        "short-term savings needs even though they needed easy "
+                        "access and no risk to capital."
+                    ),
+                },
+                {
+                    "artifact_type": "disclosure",
+                    "filename": "demo_003_disclosure.txt",
+                    "text": (
+                        "The product may involve fluctuations in value and may not "
+                        "be suitable for customers needing immediate access to all "
+                        "funds."
+                    ),
+                },
+                {
+                    "artifact_type": "policy_excerpt",
+                    "filename": "demo_003_policy.txt",
+                    "text": (
+                        "Advisers should clearly explain risk, liquidity "
+                        "restrictions, and customer suitability considerations "
+                        "before sale."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-004",
+            "title": "Seeded demo: well-supported disclosure case",
+            "case_type": CaseType.DISCLOSURE_REVIEW,
+            "priority": Priority.MEDIUM,
+            "submitted_by": users["admin"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_004_complaint.txt",
+                    "text": (
+                        "Customer queried whether the annual charge had been "
+                        "disclosed, but later accepted that the fee explanation "
+                        "was presented clearly before purchase."
+                    ),
+                },
+                {
+                    "artifact_type": "disclosure",
+                    "filename": "demo_004_disclosure.txt",
+                    "text": (
+                        "Annual charge: 0.75% of invested balance. "
+                        "This fee is charged monthly in arrears and is shown in "
+                        "the worked example."
                     ),
                 },
                 {
                     "artifact_type": "support_transcript",
-                    "filename": "demo_003_transcript.txt",
+                    "filename": "demo_004_transcript.txt",
+                    "text": (
+                        "Agent walked through the annual charge, the monthly "
+                        "application method, and where the fee would appear on "
+                        "statements. Customer confirmed understanding."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-005",
+            "title": "Seeded demo: delayed complaint handling",
+            "case_type": CaseType.SUPPORT_REVIEW,
+            "priority": Priority.HIGH,
+            "submitted_by": users["analyst_1"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_005_complaint.txt",
+                    "text": (
+                        "Customer says their complaint was not acknowledged for "
+                        "three weeks and they had to chase several times for an "
+                        "update."
+                    ),
+                },
+                {
+                    "artifact_type": "support_transcript",
+                    "filename": "demo_005_transcript.txt",
+                    "text": (
+                        "Internal note shows the complaint inbox was backlogged "
+                        "and no response was sent for 19 days after receipt."
+                    ),
+                },
+                {
+                    "artifact_type": "policy_excerpt",
+                    "filename": "demo_005_policy.txt",
+                    "text": (
+                        "Complaint handling policy requires prompt "
+                        "acknowledgement and regular customer updates "
+                        "throughout the investigation period."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-006",
+            "title": "Seeded demo: outdated script version",
+            "case_type": CaseType.DISCLOSURE_REVIEW,
+            "priority": Priority.HIGH,
+            "submitted_by": users["analyst_2"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_006_complaint.txt",
+                    "text": (
+                        "Customer says the adviser used an old script that "
+                        "described charges that no longer matched the current "
+                        "product literature."
+                    ),
+                },
+                {
+                    "artifact_type": "script",
+                    "filename": "demo_006_script.txt",
+                    "text": (
+                        "Script version effective 2022 says there is no platform "
+                        "fee and describes a promotional rate that ended in 2023."
+                    ),
+                },
+                {
+                    "artifact_type": "disclosure",
+                    "filename": "demo_006_disclosure.txt",
+                    "text": (
+                        "Current 2025 disclosure states a platform fee applies "
+                        "and that the promotional rate is no longer available."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-007",
+            "title": "Seeded demo: ambiguous customer harm statement",
+            "case_type": CaseType.COMPLAINT_REVIEW,
+            "priority": Priority.MEDIUM,
+            "submitted_by": users["admin"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_007_complaint.txt",
+                    "text": (
+                        "Customer says the explanation left them worse off, "
+                        "confused, and under pressure, but does not clearly "
+                        "state whether a fee, delay, or product issue caused "
+                        "the harm."
+                    ),
+                },
+                {
+                    "artifact_type": "support_transcript",
+                    "filename": "demo_007_transcript.txt",
+                    "text": (
+                        "Call notes mention confusion and frustration but do not "
+                        "clearly identify the specific product term or service "
+                        "failure at issue."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-008",
+            "title": "Seeded demo: duplicate artifact upload",
+            "case_type": CaseType.DISCLOSURE_REVIEW,
+            "priority": Priority.MEDIUM,
+            "submitted_by": users["analyst_1"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_008_complaint.txt",
+                    "text": (
+                        "Customer says they received the same disclosure twice "
+                        "and remained unsure which version applied to their "
+                        "account."
+                    ),
+                },
+                {
+                    "artifact_type": "disclosure",
+                    "filename": "demo_008_disclosure_v1.txt",
+                    "text": (
+                        "Monthly account fee is £12. This copy appears to have "
+                        "been uploaded twice during account setup."
+                    ),
+                },
+                {
+                    "artifact_type": "disclosure",
+                    "filename": "demo_008_disclosure_v2.txt",
+                    "text": (
+                        "Monthly account fee is £12. This copy appears to have "
+                        "been uploaded twice during account setup, with a "
+                        "duplicate delivery notice attached."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-009",
+            "title": "Seeded demo: schema-failure simulation",
+            "case_type": CaseType.COMPLAINT_REVIEW,
+            "priority": Priority.HIGH,
+            "submitted_by": users["analyst_2"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_009_complaint.txt",
+                    "text": (
+                        "Customer says the fee explanation was broken and "
+                        "inconsistent. SIMULATE_SCHEMA_FAILURE seed scenario for "
+                        "extraction review routing."
+                    ),
+                },
+                {
+                    "artifact_type": "internal_note",
+                    "filename": "demo_009_note.txt",
+                    "text": (
+                        "This seeded case is intended to exercise "
+                        "schema-failure handling paths and should route safely "
+                        "to review if structured extraction is invalid."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-010",
+            "title": "Seeded demo: provider failure simulation",
+            "case_type": CaseType.SUPPORT_REVIEW,
+            "priority": Priority.HIGH,
+            "submitted_by": users["admin"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_010_complaint.txt",
+                    "text": (
+                        "Customer says support communications were confusing and "
+                        "incomplete. SIMULATE_PROVIDER_FAILURE seed scenario "
+                        "for degraded-mode routing."
+                    ),
+                },
+                {
+                    "artifact_type": "policy_excerpt",
+                    "filename": "demo_010_policy.txt",
+                    "text": (
+                        "When automated reasoning is unavailable, the case "
+                        "should fall back to rules-based assessment and be "
+                        "routed for analyst review."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-011",
+            "title": "Seeded demo: strong contradiction across dates",
+            "case_type": CaseType.DISCLOSURE_REVIEW,
+            "priority": Priority.HIGH,
+            "submitted_by": users["analyst_1"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_011_complaint.txt",
+                    "text": (
+                        "Customer says they were told the fee change took "
+                        "effect in January 2025, but their documents show "
+                        "different dates."
+                    ),
+                },
+                {
+                    "artifact_type": "script",
+                    "filename": "demo_011_script.txt",
+                    "text": (
+                        "Adviser script says the revised fee structure took "
+                        "effect on 1 January 2025."
+                    ),
+                },
+                {
+                    "artifact_type": "disclosure",
+                    "filename": "demo_011_disclosure.txt",
+                    "text": (
+                        "Formal disclosure states the revised fee structure "
+                        "takes effect on 1 March 2025."
+                    ),
+                },
+                {
+                    "artifact_type": "policy_excerpt",
+                    "filename": "demo_011_policy.txt",
+                    "text": (
+                        "Change-management note states customer communications "
+                        "should reference the operative date of 15 February "
+                        "2025."
+                    ),
+                },
+            ],
+        },
+        {
+            "reference_code": "DEMO-012",
+            "title": "Seeded demo: strong consumer-support case with clear evidence",
+            "case_type": CaseType.SUPPORT_REVIEW,
+            "priority": Priority.MEDIUM,
+            "submitted_by": users["analyst_2"],
+            "artifacts": [
+                {
+                    "artifact_type": "complaint",
+                    "filename": "demo_012_complaint.txt",
+                    "text": (
+                        "Customer initially reported difficulty accessing help, "
+                        "but later confirmed the support team resolved the issue "
+                        "quickly, clearly, and without repeat chasing."
+                    ),
+                },
+                {
+                    "artifact_type": "support_transcript",
+                    "filename": "demo_012_transcript.txt",
                     "text": (
                         "Support transcript shows the issue was acknowledged "
-                        "immediately, resolved the same day, and explained in "
-                        "plain language."
+                        "immediately, a clear explanation was given in plain "
+                        "language, and the matter was resolved the same day."
+                    ),
+                },
+                {
+                    "artifact_type": "policy_excerpt",
+                    "filename": "demo_012_policy.txt",
+                    "text": (
+                        "Support policy requires timely acknowledgement, "
+                        "plain-language explanations, and same-day resolution "
+                        "wherever feasible for routine servicing issues."
                     ),
                 },
             ],
