@@ -1,0 +1,31 @@
+{
+  "case_id": "eval-010-support-delay-backlog",
+  "scenario_type": "support_delay",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says they waited too long for a response and received no update for weeks."
+    },
+    {
+      "artifact_type": "internal_note",
+      "text": "Internal backlog note confirms delayed complaint handling and slow response times."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "support_delay",
+      "claim_text_contains": "waited too long"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_support"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "internal_note"
+    }
+  ]
+}

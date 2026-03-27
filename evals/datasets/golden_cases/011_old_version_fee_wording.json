@@ -1,0 +1,35 @@
+{
+  "case_id": "eval-011-old-version-fee-wording",
+  "scenario_type": "stale_evidence",
+  "artifacts": [
+    {
+      "artifact_type": "script",
+      "text": "Old version script says there is no account fee."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "Current disclosure states a monthly account fee of £5 applies."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "account fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "stale_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "script"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

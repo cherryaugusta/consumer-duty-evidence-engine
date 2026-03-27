@@ -1,0 +1,27 @@
+{
+  "case_id": "eval-adv-004-unclear-harm-sparse",
+  "scenario_type": "ambiguous_customer_harm",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Something was not right. Hard to explain. Customer unsure."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "other",
+      "claim_text_contains": "not right"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_understanding"
+  ],
+  "expected_support_status": "weak_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    }
+  ]
+}

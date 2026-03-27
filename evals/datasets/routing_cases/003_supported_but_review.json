@@ -1,0 +1,35 @@
+{
+  "case_id": "eval-route-003-supported-but-review",
+  "scenario_type": "manual_review_routing",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer mentions possible confusion about terms but gives little detail."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "Fees may apply depending on account usage. Details available in full terms."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "possible confusion"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "weak_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

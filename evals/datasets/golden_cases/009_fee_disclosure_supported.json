@@ -1,0 +1,32 @@
+{
+  "case_id": "eval-009-fee-disclosure-supported",
+  "scenario_type": "well_supported_disclosure",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer asked about the monthly fee before opening the account."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "The monthly fee of £5 was clearly explained and accepted by the customer before account opening."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "monthly fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}
