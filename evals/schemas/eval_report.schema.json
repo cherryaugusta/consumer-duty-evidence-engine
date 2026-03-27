@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvalReport",
+  "type": "object",
+  "required": [
+    "run_label",
+    "summary_metrics",
+    "thresholds"
+  ],
+  "properties": {
+    "run_label": {
+      "type": "string"
+    },
+    "summary_metrics": {
+      "type": "object",
+      "required": [
+        "claim_precision",
+        "claim_recall",
+        "mapping_accuracy",
+        "citation_validity_rate",
+        "routing_accuracy",
+        "support_status_accuracy",
+        "degraded_mode_success_rate"
+      ],
+      "properties": {
+        "claim_precision": {
+          "type": "number"
+        },
+        "claim_recall": {
+          "type": "number"
+        },
+        "mapping_accuracy": {
+          "type": "number"
+        },
+        "citation_validity_rate": {
+          "type": "number"
+        },
+        "routing_accuracy": {
+          "type": "number"
+        },
+        "support_status_accuracy": {
+          "type": "number"
+        },
+        "degraded_mode_success_rate": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": true
+    },
+    "thresholds": {
+      "type": "object",
+      "required": [
+        "mapping_accuracy_min",
+        "false_negative_rate_max",
+        "citation_validity_min",
+        "support_status_accuracy_min",
+        "degraded_mode_success_min"
+      ],
+      "properties": {
+        "mapping_accuracy_min": {
+          "type": "number"
+        },
+        "false_negative_rate_max": {
+          "type": "number"
+        },
+        "citation_validity_min": {
+          "type": "number"
+        },
+        "support_status_accuracy_min": {
+          "type": "number"
+        },
+        "degraded_mode_success_min": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
