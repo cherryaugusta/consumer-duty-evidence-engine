@@ -10,6 +10,7 @@ from apps.audits.services import create_audit_event
 from apps.cases.models import ReviewCase
 from apps.cases.state_machine import assert_transition
 from apps.core.constants import CaseStatus, Priority
+from apps.extraction.models import ClaimType
 from apps.recommendations.models import (
     PromptPurpose,
     PromptVersion,
@@ -42,20 +43,40 @@ def _support_distribution(case: ReviewCase) -> dict[str, int]:
     return {
         AssessmentStatus.SUPPORTED: counter.get(AssessmentStatus.SUPPORTED, 0),
         AssessmentStatus.WEAK_SUPPORT: counter.get(AssessmentStatus.WEAK_SUPPORT, 0),
-        AssessmentStatus.MISSING_SUPPORT: counter.get(AssessmentStatus.MISSING_SUPPORT, 0),
+        AssessmentStatus.MISSING_SUPPORT: counter.get(
+            AssessmentStatus.MISSING_SUPPORT,
+            0,
+        ),
         AssessmentStatus.CONTRADICTORY_SUPPORT: counter.get(
             AssessmentStatus.CONTRADICTORY_SUPPORT,
             0,
         ),
-        AssessmentStatus.STALE_SUPPORT: counter.get(AssessmentStatus.STALE_SUPPORT, 0),
+        AssessmentStatus.STALE_SUPPORT: counter.get(
+            AssessmentStatus.STALE_SUPPORT,
+            0,
+        ),
     }
+
+
+def _has_claim_type(case: ReviewCase, claim_type: str) -> bool:
+    return case.claims.filter(claim_type=claim_type).exists()
 
 
 def _recommended_action(case: ReviewCase, distribution: dict[str, int]) -> str:
     contradiction_count = case.contradiction_flags.count()
     requires_review_count = case.assessments.filter(requires_review=True).count()
+    assessment_count = case.assessments.count()
 
     if case.degraded_mode_active:
+        return RecommendedAction.REVIEW
+
+    if assessment_count == 0:
+        return RecommendedAction.REQUEST_MORE_EVIDENCE
+
+    if _has_claim_type(case, ClaimType.OTHER):
+        return RecommendedAction.REVIEW
+
+    if _has_claim_type(case, ClaimType.MISLEADING_EXPLANATION):
         return RecommendedAction.REVIEW
 
     if contradiction_count >= 2 and case.priority in {Priority.HIGH, Priority.CRITICAL}:
@@ -143,8 +164,8 @@ def _build_summary(
     else:
         lines.append(
             "Recommended action: review. Human review is required because "
-            "support is weak, missing, contradictory, stale, or the workflow "
-            "is in degraded mode."
+            "support is weak, missing, contradictory, stale, ambiguous, or the "
+            "workflow is in degraded mode."
         )
 
     return " ".join(lines)
@@ -159,6 +180,8 @@ def _structured_rationale(
     contradiction_count: int,
     confidence: float,
 ) -> dict[str, Any]:
+    claim_types = list(case.claims.values_list("claim_type", flat=True).distinct())
+
     return {
         "support_distribution": distribution,
         "contradiction_count": contradiction_count,
@@ -168,6 +191,7 @@ def _structured_rationale(
         "assessment_count": case.assessments.count(),
         "confidence": confidence,
         "recommended_action": action,
+        "claim_types": claim_types,
         "review_reason": (
             determine_review_reason(case)
             if action
@@ -220,7 +244,7 @@ def generate_case_recommendation(*, case: ReviewCase) -> Recommendation:
             ),
             "confidence": confidence,
             "citation_count": citation_count,
-            "model_version": "rules-recommendation-v1",
+            "model_version": "rules-recommendation-v2",
             "prompt_version": prompt_version,
         },
     )
