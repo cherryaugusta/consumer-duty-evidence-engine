@@ -1,0 +1,28 @@
+{
+  "case_id": "eval-003-missing-support",
+  "scenario_type": "missing_disclosure",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says no fee information was provided at any point."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "no fee information"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "missing_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    }
+  ]
+}

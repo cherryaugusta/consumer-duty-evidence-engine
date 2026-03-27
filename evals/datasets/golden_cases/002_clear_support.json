@@ -1,0 +1,32 @@
+{
+  "case_id": "eval-002-clear-support",
+  "scenario_type": "well_supported_disclosure",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer asked about fees and confirmed understanding before proceeding."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "A monthly fee of £5 applies. This was clearly explained and accepted by the customer."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}
