@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import uuid
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -312,6 +313,30 @@ def evaluate_citations(case: ReviewCase, expected: dict) -> dict:
     }
 
 
+def build_case_summary(result: dict) -> dict:
+    checks = {
+        "claims": result["claim_result"]["all_expected_matched"],
+        "mapping": result["outcome_result"]["exact_match"],
+        "support": result["support_result"]["match"],
+        "routing": result["routing_result"]["requires_review_match"],
+        "citation": result["citation_result"]["match"],
+    }
+    passed_checks = sum(1 for passed in checks.values() if passed)
+    total_checks = len(checks)
+    score = passed_checks / total_checks if total_checks else 0.0
+
+    failed_checks = [name for name, passed in checks.items() if not passed]
+
+    return {
+        "case_id": result["case_id"],
+        "score": round(score, 4),
+        "passed_checks": passed_checks,
+        "total_checks": total_checks,
+        "all_passed": passed_checks == total_checks,
+        "failed_checks": failed_checks,
+    }
+
+
 def evaluate_case(case: ReviewCase, expected: dict) -> dict:
     claim_result = evaluate_claims(case, expected)
     outcome_result = evaluate_outcomes(case, expected)
@@ -319,14 +344,17 @@ def evaluate_case(case: ReviewCase, expected: dict) -> dict:
     routing_result = evaluate_routing(case, expected)
     citation_result = evaluate_citations(case, expected)
 
-    return {
+    result = {
         "case_id": expected["case_id"],
+        "scenario_type": expected["scenario_type"],
         "claim_result": claim_result,
         "outcome_result": outcome_result,
         "support_result": support_result,
         "routing_result": routing_result,
         "citation_result": citation_result,
     }
+    result["summary"] = build_case_summary(result)
+    return result
 
 
 def aggregate_metrics(results: list[dict]) -> dict:
@@ -340,6 +368,7 @@ def aggregate_metrics(results: list[dict]) -> dict:
             "routing_accuracy": 0.0,
             "support_status_accuracy": 0.0,
             "degraded_mode_success_rate": 0.0,
+            "pass_rate": 0.0,
         }
 
     claim_precision = sum(r["claim_result"]["precision"] for r in results) / total
@@ -361,6 +390,8 @@ def aggregate_metrics(results: list[dict]) -> dict:
     else:
         degraded_mode_success_rate = 1.0
 
+    pass_rate = sum(1 for r in results if r["summary"]["all_passed"]) / total
+
     return {
         "claim_precision": round(claim_precision, 4),
         "claim_recall": round(claim_recall, 4),
@@ -369,10 +400,75 @@ def aggregate_metrics(results: list[dict]) -> dict:
         "routing_accuracy": round(routing_accuracy, 4),
         "support_status_accuracy": round(support_status_accuracy, 4),
         "degraded_mode_success_rate": round(degraded_mode_success_rate, 4),
+        "pass_rate": round(pass_rate, 4),
     }
 
 
+def build_failure_breakdown(results: list[dict]) -> dict:
+    counter = Counter()
+
+    for result in results:
+        for failed_check in result["summary"]["failed_checks"]:
+            counter[failed_check] += 1
+
+    return {
+        "claims": counter.get("claims", 0),
+        "mapping": counter.get("mapping", 0),
+        "support": counter.get("support", 0),
+        "routing": counter.get("routing", 0),
+        "citation": counter.get("citation", 0),
+    }
+
+
+def build_scenario_breakdown(results: list[dict]) -> dict:
+    scenario_map: dict[str, dict] = {}
+
+    for result in results:
+        scenario_type = result["scenario_type"]
+        if scenario_type not in scenario_map:
+            scenario_map[scenario_type] = {
+                "total_cases": 0,
+                "fully_passed_cases": 0,
+                "average_score": 0.0,
+            }
+
+        scenario_map[scenario_type]["total_cases"] += 1
+        if result["summary"]["all_passed"]:
+            scenario_map[scenario_type]["fully_passed_cases"] += 1
+
+    for scenario_type in scenario_map:
+        scenario_results = [r for r in results if r["scenario_type"] == scenario_type]
+        avg_score = sum(r["summary"]["score"] for r in scenario_results) / len(scenario_results)
+        scenario_map[scenario_type]["average_score"] = round(avg_score, 4)
+
+    return scenario_map
+
+
+def build_ranked_case_lists(results: list[dict]) -> tuple[list[dict], list[dict]]:
+    ranked = sorted(
+        [
+            {
+                "case_id": r["case_id"],
+                "scenario_type": r["scenario_type"],
+                "score": r["summary"]["score"],
+                "failed_checks": r["summary"]["failed_checks"],
+            }
+            for r in results
+        ],
+        key=lambda item: (item["score"], item["case_id"]),
+    )
+
+    top_failures = ranked[:5]
+    top_successes = list(reversed(ranked[-5:]))
+
+    return top_failures, top_successes
+
+
 def build_report(results: list[dict], metrics: dict) -> dict:
+    failure_breakdown = build_failure_breakdown(results)
+    scenario_breakdown = build_scenario_breakdown(results)
+    top_failures, top_successes = build_ranked_case_lists(results)
+
     return {
         "run_label": f"real-run-{datetime.now(UTC).isoformat()}",
         "summary_metrics": metrics,
@@ -384,6 +480,10 @@ def build_report(results: list[dict], metrics: dict) -> dict:
             "degraded_mode_success_min": 0.9,
         },
         "total_cases": len(results),
+        "failure_breakdown": failure_breakdown,
+        "scenario_breakdown": scenario_breakdown,
+        "top_failures": top_failures,
+        "top_successes": top_successes,
         "results": results,
     }
 
@@ -419,11 +519,9 @@ def main():
             json.dumps(
                 {
                     "case_id": result["case_id"],
-                    "claims_matched": result["claim_result"]["all_expected_matched"],
-                    "outcomes_match": result["outcome_result"]["exact_match"],
-                    "support_match": result["support_result"]["match"],
-                    "routing_match": result["routing_result"]["requires_review_match"],
-                    "citation_match": result["citation_result"]["match"],
+                    "scenario_type": result["scenario_type"],
+                    "score": result["summary"]["score"],
+                    "failed_checks": result["summary"]["failed_checks"],
                 },
                 indent=2,
             )
@@ -440,6 +538,7 @@ def main():
 
     print(f"\nEval report generated at: {output_path}")
     print(json.dumps(report["summary_metrics"], indent=2))
+    print(json.dumps(report["failure_breakdown"], indent=2))
 
 
 if __name__ == "__main__":
