@@ -11,6 +11,7 @@ sys.path.append(str(BACKEND_DIR))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
 
+from django.core.exceptions import ObjectDoesNotExist  # noqa: E402
 from django.db import transaction  # noqa: E402
 
 from apps.artifacts.models import SourceArtifact  # noqa: E402
@@ -23,13 +24,20 @@ from apps.parsing.services import parse_artifact_to_sections  # noqa: E402
 from apps.recommendations.services import generate_case_recommendation  # noqa: E402
 
 
+def get_recommendation_action(case: ReviewCase) -> str | None:
+    try:
+        return case.recommendation.recommended_action
+    except ObjectDoesNotExist:
+        return None
+
+
 def snapshot(case: ReviewCase) -> dict:
     return {
         "status": case.status,
         "review_status": case.review_status,
         "claims": case.claims.count(),
         "assessments": case.assessments.count(),
-        "recommendation": getattr(case.recommendation, "recommended_action", None),
+        "recommendation": get_recommendation_action(case),
     }
 
 
@@ -55,16 +63,17 @@ def replay_case(reference_code: str) -> None:
 
     artifacts = list(SourceArtifact.objects.filter(case=case).order_by("id"))
 
-    # Reset pipeline state (non-destructive to artifacts)
     case.claims.all().delete()
     case.assessments.all().delete()
-    if hasattr(case, "recommendation") and case.recommendation:
+
+    try:
         case.recommendation.delete()
+    except ObjectDoesNotExist:
+        pass
 
     case.status = CaseStatus.PARSING
     case.save(update_fields=["status", "updated_at"])
 
-    # Re-run pipeline
     for artifact in artifacts:
         parse_artifact_to_sections(artifact)
 
@@ -93,9 +102,8 @@ def replay_case(reference_code: str) -> None:
     after = snapshot(case)
     print_snapshot("AFTER ", after)
 
-    # Determinism check
     print("\n=== Determinism Check ===")
-    for key in before.keys():
+    for key in before:
         if before[key] != after[key]:
             print(f"CHANGED: {key} | before={before[key]} | after={after[key]}")
         else:
@@ -104,7 +112,7 @@ def replay_case(reference_code: str) -> None:
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python replay_case.py <REFERENCE_CODE>")
+        print("Usage: python .\\infra\\scripts\\replay_case.py <REFERENCE_CODE>")
         sys.exit(1)
 
     reference_code = sys.argv[1]
