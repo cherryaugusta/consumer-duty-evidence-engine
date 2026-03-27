@@ -1,0 +1,39 @@
+{
+  "case_id": "eval-005-outdated-script",
+  "scenario_type": "stale_evidence",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says the explanation they were given about fees no longer matches the current product terms."
+    },
+    {
+      "artifact_type": "script",
+      "text": "Agent script version 2023 states there is no monthly account fee."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "Current 2026 disclosure states a monthly account fee of £5 applies."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "no longer matches"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "stale_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "script"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

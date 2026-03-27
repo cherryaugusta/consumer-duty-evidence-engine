@@ -1,0 +1,39 @@
+{
+  "case_id": "eval-006-contradictory-script",
+  "scenario_type": "contradiction",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says they were told support was available seven days a week."
+    },
+    {
+      "artifact_type": "script",
+      "text": "Sales script says support is available 24/7."
+    },
+    {
+      "artifact_type": "policy_excerpt",
+      "text": "Current service policy states support hours are Monday to Friday, 9am to 5pm."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "misleading_explanation",
+      "claim_text_contains": "seven days"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_support",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "contradictory_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "script"
+    },
+    {
+      "artifact_type": "policy_excerpt"
+    }
+  ]
+}

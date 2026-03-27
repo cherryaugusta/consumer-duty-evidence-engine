@@ -1,0 +1,34 @@
+{
+  "case_id": "eval-004-delayed-complaint-handling",
+  "scenario_type": "support_delay",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says their complaint was not acknowledged for over three weeks and they received no update."
+    },
+    {
+      "artifact_type": "support_transcript",
+      "text": "Internal note confirms backlog and delayed response times during the review period."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "support_delay",
+      "claim_text_contains": "not acknowledged"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_support"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "support_transcript"
+    }
+  ]
+}
