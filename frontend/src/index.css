@@ -40,8 +40,42 @@ a:hover {
 
 button,
 textarea,
-select {
+select,
+input {
   font: inherit;
+}
+
+button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f9fafb;
+}
+
+textarea {
+  resize: vertical;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .app-shell {
@@ -92,11 +126,6 @@ select {
 
 .token-panel button {
   align-self: flex-start;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
 }
 
 .main-content {
@@ -136,6 +165,39 @@ select {
   gap: 8px;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-label {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
 .stat-chip {
   border: 1px solid #d1d5db;
   background: #ffffff;
@@ -160,17 +222,30 @@ select {
 .panel h3,
 .panel h4 {
   margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.panel-subtitle {
+  margin: 0 0 16px;
+  color: #6b7280;
 }
 
 .error-panel {
   border-color: #ef4444;
 }
 
+.table-wrap {
+  overflow-x: auto;
+}
+
+table,
 .data-table {
   width: 100%;
   border-collapse: collapse;
 }
 
+table th,
+table td,
 .data-table th,
 .data-table td {
   border-bottom: 1px solid #e5e7eb;
@@ -179,8 +254,26 @@ select {
   vertical-align: top;
 }
 
+table th,
 .data-table th {
   background: #f9fafb;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+
+.detail-grid dt {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.detail-grid dd {
+  margin: 0;
+  color: #111827;
 }
 
 .stack {
@@ -229,6 +322,30 @@ select {
   border-radius: 8px;
   background: #ffffff;
   min-width: 280px;
+}
+
+.pagination-note {
+  margin-top: 16px;
+  color: #6b7280;
+}
+
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.metric-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 @media (max-width: 1100px) {
