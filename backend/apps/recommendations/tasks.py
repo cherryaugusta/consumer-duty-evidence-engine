@@ -5,7 +5,7 @@ import logging
 from celery import shared_task
 from django.db import transaction
 
-from apps.audits.services import create_audit_event
+from apps.audits.services import create_audit_event, emit_audit_event
 from apps.cases.models import ReviewCase
 from apps.core.constants import CaseStatus
 from apps.recommendations.services import (
@@ -22,25 +22,72 @@ def recommend_case_task(self, case_id: str) -> str:
         with transaction.atomic():
             case = ReviewCase.objects.select_for_update().get(id=case_id)
 
+            emit_audit_event(
+                case=case,
+                event_type="case.recommendation.started",
+                correlation_id=case.correlation_id,
+                actor_type="job",
+                actor_id=self.request.id,
+                payload={
+                    "case_id": str(case.id),
+                    "task_id": self.request.id,
+                    "current_status": case.status,
+                },
+            )
+
             create_audit_event(
                 case=case,
                 event_type="recommendation.started",
+                correlation_id=case.correlation_id,
+                actor_type="job",
+                actor_id=self.request.id,
                 payload={
                     "task_id": self.request.id,
                     "current_status": case.status,
                 },
             )
 
-            recommendation = generate_case_recommendation(case=case)
-
             logger.info(
-                "recommendation_completed",
+                "Recommendation started",
                 extra={
                     "extra_data": {
                         "case_id": str(case.id),
+                        "correlation_id": case.correlation_id,
+                        "stage": "recommendation",
+                        "task_id": self.request.id,
+                        "current_status": case.status,
+                    }
+                },
+            )
+
+            recommendation = generate_case_recommendation(case=case)
+
+            emit_audit_event(
+                case=case,
+                event_type="case.recommendation.completed",
+                correlation_id=case.correlation_id,
+                actor_type="job",
+                actor_id=self.request.id,
+                payload={
+                    "case_id": str(case.id),
+                    "recommendation_id": str(recommendation.id),
+                    "recommended_action": recommendation.recommended_action,
+                    "task_id": self.request.id,
+                    "case_status": case.status,
+                },
+            )
+
+            logger.info(
+                "Recommendation completed",
+                extra={
+                    "extra_data": {
+                        "case_id": str(case.id),
+                        "correlation_id": case.correlation_id,
+                        "stage": "recommendation",
+                        "task_id": self.request.id,
                         "recommendation_id": str(recommendation.id),
                         "recommended_action": recommendation.recommended_action,
-                        "task_id": self.request.id,
+                        "case_status": case.status,
                     }
                 },
             )
@@ -49,17 +96,36 @@ def recommend_case_task(self, case_id: str) -> str:
 
     except Exception as exc:
         logger.exception(
-            "recommendation_failed",
+            "Recommendation failed",
             extra={
                 "extra_data": {
                     "case_id": case_id,
+                    "stage": "recommendation",
                     "task_id": self.request.id,
                     "retry_count": self.request.retries,
+                    "error": str(exc),
                 }
             },
         )
 
         if self.request.retries < self.max_retries:
+            try:
+                case = ReviewCase.objects.get(id=case_id)
+                emit_audit_event(
+                    case=case,
+                    event_type="case.recommendation.retrying",
+                    correlation_id=case.correlation_id,
+                    actor_type="job",
+                    actor_id=self.request.id,
+                    payload={
+                        "case_id": str(case.id),
+                        "task_id": self.request.id,
+                        "retry_count": self.request.retries,
+                        "error": str(exc),
+                    },
+                )
+            except ReviewCase.DoesNotExist:
+                pass
             raise self.retry(exc=exc) from exc
 
         with transaction.atomic():
@@ -70,9 +136,27 @@ def recommend_case_task(self, case_id: str) -> str:
                 reason=str(exc),
             )
 
+            emit_audit_event(
+                case=case,
+                event_type="case.recommendation.failed_fallback_review",
+                correlation_id=case.correlation_id,
+                actor_type="job",
+                actor_id=self.request.id,
+                payload={
+                    "case_id": str(case.id),
+                    "task_id": self.request.id,
+                    "error": str(exc),
+                    "case_status": case.status,
+                    "fallback_recommendation_id": str(recommendation.id),
+                },
+            )
+
             create_audit_event(
                 case=case,
                 event_type="recommendation.failed_fallback_review",
+                correlation_id=case.correlation_id,
+                actor_type="job",
+                actor_id=self.request.id,
                 payload={
                     "task_id": self.request.id,
                     "error": str(exc),
@@ -88,5 +172,20 @@ def recommend_case_task(self, case_id: str) -> str:
             }:
                 case.status = CaseStatus.NEEDS_REVIEW
                 case.save(update_fields=["status", "updated_at"])
+
+            logger.info(
+                "Recommendation fallback completed",
+                extra={
+                    "extra_data": {
+                        "case_id": str(case.id),
+                        "correlation_id": case.correlation_id,
+                        "stage": "recommendation",
+                        "task_id": self.request.id,
+                        "fallback_recommendation_id": str(recommendation.id),
+                        "case_status": case.status,
+                        "degraded_mode_active": case.degraded_mode_active,
+                    }
+                },
+            )
 
             return str(recommendation.id)
