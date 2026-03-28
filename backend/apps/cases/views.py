@@ -3,10 +3,16 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.artifacts.models import SourceArtifact
+from apps.artifacts.tasks import queue_case_parsing_if_ready
 from apps.cases.models import ReviewCase
-from apps.cases.serializers import ReviewCaseSerializer
-from apps.parsing.tasks import parse_artifact_task
+from apps.cases.serializers import (
+    CaseReplaySerializer,
+    CaseRetrySerializer,
+    ReviewCaseCreateSerializer,
+    ReviewCaseSerializer,
+)
+from apps.cases.services import transition_case
+from apps.core.constants import CaseStatus
 from apps.recommendations.models import Recommendation
 from apps.recommendations.serializers import RecommendationSerializer
 
@@ -21,10 +27,10 @@ class CaseListCreateView(APIView):
         return Response(ReviewCaseSerializer(cases, many=True).data)
 
     def post(self, request):
-        serializer = ReviewCaseSerializer(data=request.data)
+        serializer = ReviewCaseCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=201)
+        case = serializer.save()
+        return Response(ReviewCaseSerializer(case).data, status=status.HTTP_201_CREATED)
 
 
 class CaseDetailView(APIView):
@@ -39,23 +45,80 @@ class CaseDetailView(APIView):
 
 
 class CaseRetryView(APIView):
+    RETRYABLE_STATUSES = {
+        CaseStatus.FAILED,
+    }
+
     def post(self, request, pk):
         case = get_object_or_404(ReviewCase, pk=pk)
+        serializer = CaseRetrySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        case.status = "ingestion_pending"
-        case.save()
+        if case.status not in self.RETRYABLE_STATUSES:
+            return Response(
+                {
+                    "detail": (
+                        f"Case retry is only allowed from {CaseStatus.FAILED}. "
+                        f"Current status is {case.status}."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        artifacts = SourceArtifact.objects.filter(case=case)
+        transition_case(
+            case=case,
+            new_status=CaseStatus.INGESTION_PENDING,
+            correlation_id=case.correlation_id,
+            actor_type="user",
+            actor_id=(
+                str(request.user.id)
+                if getattr(request, "user", None) and request.user.is_authenticated
+                else None
+            ),
+            message="Case retry requested",
+            payload={
+                "reason": serializer.validated_data.get("reason", ""),
+            },
+        )
 
-        for artifact in artifacts:
-            parse_artifact_task.delay(str(artifact.id))
+        case.refresh_from_db(fields=["status"])
 
-        return Response({"message": "Retry triggered", "artifacts": artifacts.count()})
+        transition_case(
+            case=case,
+            new_status=CaseStatus.PARSING,
+            correlation_id=case.correlation_id,
+            actor_type="user",
+            actor_id=(
+                str(request.user.id)
+                if getattr(request, "user", None) and request.user.is_authenticated
+                else None
+            ),
+            message="Retry queued parsing",
+            payload={
+                "reason": serializer.validated_data.get("reason", ""),
+            },
+        )
+
+        queue_case_parsing_if_ready.delay(str(case.id))
+
+        return Response(
+            {
+                "message": "Retry triggered",
+                "case_id": str(case.id),
+                "status": case.status,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class CaseReplayView(APIView):
     def post(self, request, pk):
-        return Response({"message": "Replay not implemented"})
+        serializer = CaseReplaySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            {"detail": "Replay not implemented"},
+            status=status.HTTP_501_NOT_IMPLEMENTED,
+        )
 
 
 # -------------------------
@@ -86,7 +149,8 @@ class CaseRecommendationView(APIView):
 
         if not rec:
             return Response(
-                {"detail": "Recommendation not ready"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "Recommendation not ready"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         return Response(RecommendationSerializer(rec).data)

@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from apps.audits.services import create_audit_event
 from apps.cases.models import ReviewCase
-from apps.cases.state_machine import assert_transition
+from apps.cases.services import transition_case
 from apps.core.constants import CaseStatus, Priority, ReviewStatus
 from apps.recommendations.models import Recommendation, RecommendedAction
 from apps.reviews.models import ReviewerAction, ReviewerActionType, ReviewReasonCode, ReviewTask
@@ -49,6 +49,30 @@ def determine_review_reason(case: ReviewCase) -> str:
         return ReviewReasonCode.LOW_CONFIDENCE
 
     return ReviewReasonCode.MANUAL_SAMPLING
+
+
+def _transition_case(
+    *,
+    case: ReviewCase,
+    review_task: ReviewTask,
+    reviewer: User,
+    new_status: str,
+    message: str,
+) -> None:
+    if case.status == new_status:
+        return
+
+    transition_case(
+        case=case,
+        new_status=new_status,
+        correlation_id=case.correlation_id,
+        actor_type="reviewer",
+        actor_id=str(reviewer.id),
+        message=message,
+        payload={
+            "review_task_id": str(review_task.id),
+        },
+    )
 
 
 @transaction.atomic
@@ -155,13 +179,6 @@ def assign_review_task(
     return review_task
 
 
-def _transition_case(case: ReviewCase, new_status: str) -> None:
-    if case.status != new_status:
-        assert_transition(case.status, new_status)
-        case.status = new_status
-        case.save(update_fields=["status", "updated_at"])
-
-
 @transaction.atomic
 def approve_review_task(
     *,
@@ -170,8 +187,15 @@ def approve_review_task(
     comment: str,
 ) -> ReviewTask:
     case = review_task.case
+    old_case_status = case.status
 
-    _transition_case(case, CaseStatus.APPROVED)
+    _transition_case(
+        case=case,
+        review_task=review_task,
+        reviewer=reviewer,
+        new_status=CaseStatus.APPROVED,
+        message="Review task approved case",
+    )
 
     review_task.status = ReviewStatus.APPROVED
     review_task.save(update_fields=["status", "updated_at"])
@@ -183,7 +207,7 @@ def approve_review_task(
         review_task=review_task,
         reviewer=reviewer,
         action_type=ReviewerActionType.APPROVE,
-        old_value={"case_status": case.status},
+        old_value={"case_status": old_case_status},
         new_value={"case_status": CaseStatus.APPROVED},
         comment=comment,
     )
@@ -230,6 +254,9 @@ def override_review_task(
         },
     )
 
+    old_case_status = case.status
+    old_recommended_action = recommendation.recommended_action
+
     recommendation.recommended_action = recommended_action
     recommendation.recommended_priority = (
         recommended_priority or recommendation.recommended_priority
@@ -241,19 +268,35 @@ def override_review_task(
     recommendation.model_version = "reviewer-override"
     recommendation.save()
 
-    old_case_status = case.status
-
     if recommended_action == RecommendedAction.APPROVE:
-        _transition_case(case, CaseStatus.APPROVED)
+        _transition_case(
+            case=case,
+            review_task=review_task,
+            reviewer=reviewer,
+            new_status=CaseStatus.APPROVED,
+            message="Reviewer override approved case",
+        )
     elif recommended_action == RecommendedAction.ESCALATE:
-        _transition_case(case, CaseStatus.ESCALATED)
+        _transition_case(
+            case=case,
+            review_task=review_task,
+            reviewer=reviewer,
+            new_status=CaseStatus.ESCALATED,
+            message="Reviewer override escalated case",
+        )
     else:
-        if case.status != CaseStatus.NEEDS_REVIEW:
-            if case.status == CaseStatus.ASSESSED:
-                _transition_case(case, CaseStatus.NEEDS_REVIEW)
-            else:
-                case.status = CaseStatus.NEEDS_REVIEW
-                case.save(update_fields=["status", "updated_at"])
+        if case.status == CaseStatus.ASSESSED:
+            _transition_case(
+                case=case,
+                review_task=review_task,
+                reviewer=reviewer,
+                new_status=CaseStatus.NEEDS_REVIEW,
+                message="Reviewer override routed case to review",
+            )
+        elif case.status != CaseStatus.NEEDS_REVIEW:
+            raise ValueError(
+                f"Invalid case status for override action '{recommended_action}': {case.status}"
+            )
 
     review_task.status = ReviewStatus.OVERRIDDEN
     review_task.save(update_fields=["status", "updated_at"])
@@ -267,7 +310,7 @@ def override_review_task(
         action_type=ReviewerActionType.OVERRIDE,
         old_value={
             "case_status": old_case_status,
-            "recommended_action": recommendation.recommended_action,
+            "recommended_action": old_recommended_action,
         },
         new_value={
             "case_status": case.status,
@@ -305,7 +348,13 @@ def escalate_review_task(
 ) -> ReviewTask:
     case = review_task.case
 
-    _transition_case(case, CaseStatus.ESCALATED)
+    _transition_case(
+        case=case,
+        review_task=review_task,
+        reviewer=reviewer,
+        new_status=CaseStatus.ESCALATED,
+        message="Review task escalated case",
+    )
 
     review_task.status = ReviewStatus.ESCALATED
     review_task.save(update_fields=["status", "updated_at"])

@@ -18,10 +18,30 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=15)
-def recommend_case_task(self, case_id: str) -> str:
+def recommend_case_task(self, case_id: str) -> str | dict:
     try:
         with transaction.atomic():
             case = ReviewCase.objects.select_for_update().get(id=case_id)
+
+            if case.status != CaseStatus.ASSESSED:
+                logger.info(
+                    "Recommendation skipped; unexpected state",
+                    extra={
+                        "extra_data": {
+                            "case_id": str(case.id),
+                            "correlation_id": case.correlation_id,
+                            "stage": "recommendation",
+                            "task_id": self.request.id,
+                            "case_status": case.status,
+                            "expected_status": CaseStatus.ASSESSED,
+                        }
+                    },
+                )
+                return {
+                    "case_id": str(case.id),
+                    "skipped": True,
+                    "case_status": case.status,
+                }
 
             emit_audit_event(
                 case=case,
