@@ -1,10 +1,14 @@
-import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { CasesPage } from "./features/cases/CasesPage";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
+
 import { CaseDetailPage } from "./features/cases/CaseDetailPage";
+import { CasesPage } from "./features/cases/CasesPage";
+import { ReviewQueuePage } from "./features/reviews/ReviewQueuePage";
 
 function App() {
-  const [token, setToken] = useState<string>(() => localStorage.getItem("access_token") ?? "");
+  const [token, setToken] = useState<string>(
+    () => localStorage.getItem("access_token") ?? "",
+  );
 
   useEffect(() => {
     if (token.trim()) {
@@ -24,6 +28,7 @@ function App() {
 
         <nav className="nav">
           <Link to="/">Cases</Link>
+          <Link to="/review-tasks">Review Queue</Link>
         </nav>
 
         <div className="token-panel">
@@ -45,6 +50,7 @@ function App() {
         <Routes>
           <Route path="/" element={<CasesPage />} />
           <Route path="/cases/:id" element={<CaseDetailPage />} />
+          <Route path="/review-tasks" element={<ReviewQueuePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
