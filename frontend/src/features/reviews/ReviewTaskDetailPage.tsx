@@ -6,7 +6,11 @@ import {
 } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
-import { assignReviewTask, fetchReviewTask } from "../../api/reviewTasks";
+import {
+  approveReviewTask,
+  assignReviewTask,
+  fetchReviewTask,
+} from "../../api/reviewTasks";
 
 function formatDateTime(value: string): string {
   return new Date(value).toLocaleString();
@@ -50,6 +54,9 @@ export function ReviewTaskDetailPage() {
   const [assignComment, setAssignComment] = useState("");
   const [assignFeedback, setAssignFeedback] = useState("");
   const [assignError, setAssignError] = useState("");
+  const [approveComment, setApproveComment] = useState("");
+  const [approveFeedback, setApproveFeedback] = useState("");
+  const [approveError, setApproveError] = useState("");
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["review-task", id],
@@ -80,6 +87,37 @@ export function ReviewTaskDetailPage() {
     onError: (mutationError) => {
       setAssignFeedback("");
       setAssignError(getErrorMessage(mutationError));
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) {
+        throw new Error("Review task identifier is missing.");
+      }
+
+      const trimmedComment = approveComment.trim();
+      if (!trimmedComment) {
+        throw new Error("Approval comment is required.");
+      }
+
+      return approveReviewTask(id, {
+        comment: trimmedComment,
+      });
+    },
+    onSuccess: async () => {
+      setApproveError("");
+      setApproveFeedback("Review task approved successfully.");
+      setApproveComment("");
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["review-task", id] }),
+        queryClient.invalidateQueries({ queryKey: ["review-tasks"] }),
+      ]);
+    },
+    onError: (mutationError) => {
+      setApproveFeedback("");
+      setApproveError(getErrorMessage(mutationError));
     },
   });
 
@@ -247,7 +285,7 @@ export function ReviewTaskDetailPage() {
       <div className="panel">
         <h3>Task actions</h3>
         <p className="panel-subtitle">
-          Minimal frontend action surface for assigning this review task.
+          Minimal frontend action surface for assigning and approving this review task.
         </p>
 
         {assignFeedback ? <p>{assignFeedback}</p> : null}
@@ -275,6 +313,36 @@ export function ReviewTaskDetailPage() {
             disabled={assignMutation.isPending}
           >
             {assignMutation.isPending ? "Assigning..." : "Assign to me"}
+          </button>
+        </div>
+
+        <hr style={{ margin: "1.5rem 0" }} />
+
+        {approveFeedback ? <p>{approveFeedback}</p> : null}
+
+        {approveError ? (
+          <div className="error-panel">
+            <p>Approve action failed.</p>
+            <pre>{approveError}</pre>
+          </div>
+        ) : null}
+
+        <label htmlFor="approve-comment">Approval comment</label>
+        <textarea
+          id="approve-comment"
+          value={approveComment}
+          onChange={(event) => setApproveComment(event.target.value)}
+          rows={3}
+          placeholder="Required note for the approval action"
+        />
+
+        <div className="header-actions">
+          <button
+            type="button"
+            onClick={() => approveMutation.mutate()}
+            disabled={approveMutation.isPending}
+          >
+            {approveMutation.isPending ? "Approving..." : "Approve task"}
           </button>
         </div>
       </div>
