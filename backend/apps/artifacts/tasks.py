@@ -4,6 +4,7 @@ from apps.artifacts.models import ParseStatus, SourceArtifact
 from apps.cases.models import ReviewCase
 from apps.cases.services import transition_case
 from apps.core.constants import CaseStatus
+from apps.extraction.tasks import extract_case_task
 
 
 @shared_task
@@ -31,21 +32,35 @@ def finalize_case_parsing(case_id: str):
         return {"case_id": case_id, "status": "no_artifacts"}
 
     if artifacts.filter(parse_status=ParseStatus.FAILED).exists():
-        transition_case(
-            case=case,
-            new_status=CaseStatus.FAILED,
-            correlation_id=case.correlation_id,
-            message="One or more artifacts failed to parse",
-        )
+        if case.status != CaseStatus.FAILED:
+            transition_case(
+                case=case,
+                new_status=CaseStatus.FAILED,
+                correlation_id=case.correlation_id,
+                message="One or more artifacts failed to parse",
+            )
         return {"case_id": case_id, "status": "failed"}
 
     if artifacts.filter(parse_status__in=[ParseStatus.PENDING, ParseStatus.RUNNING]).exists():
         return {"case_id": case_id, "status": "waiting"}
 
-    transition_case(
-        case=case,
-        new_status=CaseStatus.PARSED,
-        correlation_id=case.correlation_id,
-        message="All artifacts parsed",
-    )
-    return {"case_id": case_id, "status": "parsed"}
+    if case.status == CaseStatus.PARSING:
+        transition_case(
+            case=case,
+            new_status=CaseStatus.PARSED,
+            correlation_id=case.correlation_id,
+            message="All artifacts parsed",
+        )
+        case.refresh_from_db(fields=["status"])
+
+    if case.status == CaseStatus.PARSED:
+        transition_case(
+            case=case,
+            new_status=CaseStatus.EXTRACTION_PENDING,
+            correlation_id=case.correlation_id,
+            message="Extraction queued",
+        )
+        extract_case_task.delay(str(case.id))
+        return {"case_id": case_id, "status": "extraction_pending"}
+
+    return {"case_id": case_id, "status": case.status}

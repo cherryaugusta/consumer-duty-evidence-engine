@@ -3,8 +3,8 @@ import logging
 from celery import shared_task
 
 from apps.artifacts.models import ParseStatus, SourceArtifact
+from apps.artifacts.tasks import finalize_case_parsing
 from apps.audits.services import emit_audit_event
-from apps.extraction.tasks import extract_case_task
 from apps.parsing.services import parse_artifact_to_sections
 
 logger = logging.getLogger(__name__)
@@ -13,6 +13,29 @@ logger = logging.getLogger(__name__)
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=5, max_retries=3)
 def parse_artifact_task(self, artifact_id: str):
     artifact = SourceArtifact.objects.select_related("case").get(pk=artifact_id)
+
+    if artifact.parse_status == ParseStatus.PARSED:
+        logger.info(
+            "Artifact parsing skipped; already parsed",
+            extra={
+                "extra_data": {
+                    "case_id": str(artifact.case_id),
+                    "artifact_id": str(artifact.id),
+                    "correlation_id": artifact.case.correlation_id,
+                    "stage": "parsing",
+                    "task_id": self.request.id,
+                    "parse_status": artifact.parse_status,
+                }
+            },
+        )
+        finalize_case_parsing.delay(str(artifact.case_id))
+        return {
+            "artifact_id": str(artifact.id),
+            "case_id": str(artifact.case_id),
+            "parse_status": artifact.parse_status,
+            "text_length": artifact.text_length,
+            "skipped": True,
+        }
 
     emit_audit_event(
         case=artifact.case,
@@ -79,7 +102,7 @@ def parse_artifact_task(self, artifact_id: str):
             },
         )
 
-        extract_case_task.delay(str(artifact.case_id))
+        finalize_case_parsing.delay(str(artifact.case_id))
     except Exception as exc:
         artifact.parse_status = ParseStatus.FAILED
         artifact.parse_error_code = "parse_error"
@@ -114,6 +137,7 @@ def parse_artifact_task(self, artifact_id: str):
                 }
             },
         )
+        finalize_case_parsing.delay(str(artifact.case_id))
         raise
 
     return {

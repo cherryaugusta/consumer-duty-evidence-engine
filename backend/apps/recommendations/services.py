@@ -8,7 +8,7 @@ from django.db import transaction
 from apps.assessments.models import AssessmentStatus
 from apps.audits.services import create_audit_event
 from apps.cases.models import ReviewCase
-from apps.cases.state_machine import assert_transition
+from apps.cases.services import transition_case
 from apps.core.constants import CaseStatus, Priority
 from apps.extraction.models import ClaimType
 from apps.recommendations.models import (
@@ -213,13 +213,6 @@ def _structured_rationale(
     }
 
 
-def _transition_case(case: ReviewCase, new_status: str) -> None:
-    if case.status != new_status:
-        assert_transition(case.status, new_status)
-        case.status = new_status
-        case.save(update_fields=["status", "updated_at"])
-
-
 @transaction.atomic
 def generate_case_recommendation(*, case: ReviewCase) -> Recommendation:
     distribution = _support_distribution(case)
@@ -258,15 +251,45 @@ def generate_case_recommendation(*, case: ReviewCase) -> Recommendation:
     )
 
     if action == RecommendedAction.APPROVE:
-        _transition_case(case, CaseStatus.APPROVED)
+        transition_case(
+            case=case,
+            new_status=CaseStatus.APPROVED,
+            correlation_id=case.correlation_id,
+            actor_type="job",
+            message="Recommendation completed with approve outcome",
+            payload={
+                "recommended_action": action,
+                "recommendation_id": str(recommendation.id),
+            },
+        )
     elif action == RecommendedAction.ESCALATE:
-        _transition_case(case, CaseStatus.ESCALATED)
+        transition_case(
+            case=case,
+            new_status=CaseStatus.ESCALATED,
+            correlation_id=case.correlation_id,
+            actor_type="job",
+            message="Recommendation completed with escalate outcome",
+            payload={
+                "recommended_action": action,
+                "recommendation_id": str(recommendation.id),
+            },
+        )
         create_or_update_review_task(
             case=case,
             reason_code=determine_review_reason(case),
         )
     else:
-        _transition_case(case, CaseStatus.NEEDS_REVIEW)
+        transition_case(
+            case=case,
+            new_status=CaseStatus.NEEDS_REVIEW,
+            correlation_id=case.correlation_id,
+            actor_type="job",
+            message="Recommendation routed case to review",
+            payload={
+                "recommended_action": action,
+                "recommendation_id": str(recommendation.id),
+            },
+        )
         create_or_update_review_task(
             case=case,
             reason_code=determine_review_reason(case),
@@ -275,6 +298,8 @@ def generate_case_recommendation(*, case: ReviewCase) -> Recommendation:
     create_audit_event(
         case=case,
         event_type="recommendation.generated",
+        correlation_id=case.correlation_id,
+        actor_type="job",
         payload={
             "recommendation_id": str(recommendation.id),
             "recommended_action": recommendation.recommended_action,
@@ -324,15 +349,22 @@ def generate_source_only_recommendation(
     case.degraded_mode_active = True
     case.save(update_fields=["degraded_mode_active", "updated_at"])
 
-    if case.status == CaseStatus.ASSESSED:
-        _transition_case(case, CaseStatus.NEEDS_REVIEW)
-    elif case.status not in {
+    if case.status not in {
         CaseStatus.NEEDS_REVIEW,
         CaseStatus.ESCALATED,
         CaseStatus.APPROVED,
     }:
-        case.status = CaseStatus.NEEDS_REVIEW
-        case.save(update_fields=["status", "updated_at"])
+        transition_case(
+            case=case,
+            new_status=CaseStatus.NEEDS_REVIEW,
+            correlation_id=case.correlation_id,
+            actor_type="job",
+            message="Source-only fallback routed case to review",
+            payload={
+                "recommendation_id": str(recommendation.id),
+                "reason": reason,
+            },
+        )
 
     create_or_update_review_task(
         case=case,
@@ -342,6 +374,8 @@ def generate_source_only_recommendation(
     create_audit_event(
         case=case,
         event_type="recommendation.source_only_generated",
+        correlation_id=case.correlation_id,
+        actor_type="job",
         payload={
             "recommendation_id": str(recommendation.id),
             "reason": reason,

@@ -95,6 +95,7 @@ def create_or_update_review_task(
     create_audit_event(
         case=case,
         event_type="review.task_created" if created else "review.task_updated",
+        correlation_id=case.correlation_id,
         payload={
             "review_task_id": str(task.id),
             "reason_code": task.reason_code,
@@ -141,6 +142,7 @@ def assign_review_task(
     create_audit_event(
         case=case,
         event_type="review.task_assigned",
+        correlation_id=case.correlation_id,
         actor_type="reviewer",
         actor_id=str(reviewer.id),
         payload={
@@ -189,6 +191,7 @@ def approve_review_task(
     create_audit_event(
         case=case,
         event_type="review.task_approved",
+        correlation_id=case.correlation_id,
         actor_type="reviewer",
         actor_id=str(reviewer.id),
         payload={
@@ -278,6 +281,7 @@ def override_review_task(
     create_audit_event(
         case=case,
         event_type="review.task_overridden",
+        correlation_id=case.correlation_id,
         actor_type="reviewer",
         actor_id=str(reviewer.id),
         payload={
@@ -321,6 +325,7 @@ def escalate_review_task(
     create_audit_event(
         case=case,
         event_type="review.task_escalated",
+        correlation_id=case.correlation_id,
         actor_type="reviewer",
         actor_id=str(reviewer.id),
         payload={

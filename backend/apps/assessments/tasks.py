@@ -16,6 +16,29 @@ logger = logging.getLogger(__name__)
 def assess_case_task(self, case_id: str):
     case = ReviewCase.objects.get(pk=case_id)
 
+    if case.status != CaseStatus.ASSESSMENT_PENDING:
+        logger.info(
+            "Case assessment skipped; unexpected state",
+            extra={
+                "extra_data": {
+                    "case_id": str(case.id),
+                    "correlation_id": case.correlation_id,
+                    "stage": "assessment",
+                    "task_id": self.request.id,
+                    "case_status": case.status,
+                    "expected_status": CaseStatus.ASSESSMENT_PENDING,
+                }
+            },
+        )
+        return {
+            "case_id": str(case.id),
+            "created_assessments": 0,
+            "created_contradictions": 0,
+            "queued_recommendation": False,
+            "skipped": True,
+            "case_status": case.status,
+        }
+
     emit_audit_event(
         case=case,
         event_type="case.assessment.started",
@@ -43,21 +66,20 @@ def assess_case_task(self, case_id: str):
         assessments = assess_case_support(case)
         contradictions = detect_case_contradictions(case)
 
-        case.refresh_from_db(fields=["status", "review_status", "degraded_mode_active"])
-
-        if case.status != CaseStatus.ASSESSED:
-            transition_case(
-                case=case,
-                new_status=CaseStatus.ASSESSED,
-                correlation_id=case.correlation_id,
-                actor_type="job",
-                actor_id=self.request.id,
-                message="Assessment completed",
-                payload={
-                    "task_id": self.request.id,
-                    "stage": "assessment",
-                },
-            )
+        transition_case(
+            case=case,
+            new_status=CaseStatus.ASSESSED,
+            correlation_id=case.correlation_id,
+            actor_type="job",
+            actor_id=self.request.id,
+            message="Assessment completed",
+            payload={
+                "task_id": self.request.id,
+                "stage": "assessment",
+                "created_assessments": len(assessments),
+                "created_contradictions": len(contradictions),
+            },
+        )
 
         emit_audit_event(
             case=case,
