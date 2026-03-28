@@ -7,6 +7,7 @@ from django.db import transaction
 
 from apps.audits.services import create_audit_event, emit_audit_event
 from apps.cases.models import ReviewCase
+from apps.cases.services import transition_case
 from apps.core.constants import CaseStatus
 from apps.recommendations.services import (
     generate_case_recommendation,
@@ -165,13 +166,26 @@ def recommend_case_task(self, case_id: str) -> str:
                 },
             )
 
+            case.refresh_from_db(fields=["status", "review_status", "degraded_mode_active"])
+
             if case.status not in {
                 CaseStatus.NEEDS_REVIEW,
                 CaseStatus.ESCALATED,
                 CaseStatus.APPROVED,
             }:
-                case.status = CaseStatus.NEEDS_REVIEW
-                case.save(update_fields=["status", "updated_at"])
+                transition_case(
+                    case=case,
+                    new_status=CaseStatus.NEEDS_REVIEW,
+                    correlation_id=case.correlation_id,
+                    actor_type="job",
+                    actor_id=self.request.id,
+                    message="Recommendation fallback routed case to review",
+                    payload={
+                        "task_id": self.request.id,
+                        "stage": "recommendation",
+                        "fallback_recommendation_id": str(recommendation.id),
+                    },
+                )
 
             logger.info(
                 "Recommendation fallback completed",
