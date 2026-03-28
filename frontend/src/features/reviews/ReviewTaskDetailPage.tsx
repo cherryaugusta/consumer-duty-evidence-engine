@@ -11,6 +11,7 @@ import {
   assignReviewTask,
   escalateReviewTask,
   fetchReviewTask,
+  overrideReviewTask,
 } from "../../api/reviewTasks";
 
 function formatDateTime(value: string): string {
@@ -61,6 +62,16 @@ export function ReviewTaskDetailPage() {
   const [escalateComment, setEscalateComment] = useState("");
   const [escalateFeedback, setEscalateFeedback] = useState("");
   const [escalateError, setEscalateError] = useState("");
+  const [overrideRecommendedAction, setOverrideRecommendedAction] = useState<
+    "approve" | "review" | "escalate" | "request_more_evidence"
+  >("review");
+  const [overrideReasonCode, setOverrideReasonCode] = useState("");
+  const [overrideComment, setOverrideComment] = useState("");
+  const [overrideRecommendedPriority, setOverrideRecommendedPriority] =
+    useState("");
+  const [overrideExecutiveSummary, setOverrideExecutiveSummary] = useState("");
+  const [overrideFeedback, setOverrideFeedback] = useState("");
+  const [overrideError, setOverrideError] = useState("");
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["review-task", id],
@@ -153,6 +164,57 @@ export function ReviewTaskDetailPage() {
     onError: (mutationError) => {
       setEscalateFeedback("");
       setEscalateError(getErrorMessage(mutationError));
+    },
+  });
+
+  const overrideMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) {
+        throw new Error("Review task identifier is missing.");
+      }
+
+      const trimmedOverrideReasonCode = overrideReasonCode.trim();
+      const trimmedComment = overrideComment.trim();
+      const trimmedRecommendedPriority = overrideRecommendedPriority.trim();
+      const trimmedExecutiveSummary = overrideExecutiveSummary.trim();
+
+      if (!trimmedOverrideReasonCode) {
+        throw new Error("Override reason code is required.");
+      }
+
+      if (!trimmedComment) {
+        throw new Error("Override comment is required.");
+      }
+
+      return overrideReviewTask(id, {
+        recommended_action: overrideRecommendedAction,
+        override_reason_code: trimmedOverrideReasonCode,
+        comment: trimmedComment,
+        ...(trimmedRecommendedPriority
+          ? { recommended_priority: trimmedRecommendedPriority }
+          : {}),
+        ...(trimmedExecutiveSummary
+          ? { executive_summary: trimmedExecutiveSummary }
+          : {}),
+      });
+    },
+    onSuccess: async () => {
+      setOverrideError("");
+      setOverrideFeedback("Review task overridden successfully.");
+      setOverrideReasonCode("");
+      setOverrideComment("");
+      setOverrideRecommendedPriority("");
+      setOverrideExecutiveSummary("");
+      setOverrideRecommendedAction("review");
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["review-task", id] }),
+        queryClient.invalidateQueries({ queryKey: ["review-tasks"] }),
+      ]);
+    },
+    onError: (mutationError) => {
+      setOverrideFeedback("");
+      setOverrideError(getErrorMessage(mutationError));
     },
   });
 
@@ -320,8 +382,8 @@ export function ReviewTaskDetailPage() {
       <div className="panel">
         <h3>Task actions</h3>
         <p className="panel-subtitle">
-          Minimal frontend action surface for assigning, approving, and escalating
-          this review task.
+          Minimal frontend action surface for assigning, approving, escalating,
+          and overriding this review task.
         </p>
 
         {assignFeedback ? <p>{assignFeedback}</p> : null}
@@ -409,6 +471,87 @@ export function ReviewTaskDetailPage() {
             disabled={escalateMutation.isPending}
           >
             {escalateMutation.isPending ? "Escalating..." : "Escalate task"}
+          </button>
+        </div>
+
+        <hr style={{ margin: "1.5rem 0" }} />
+
+        {overrideFeedback ? <p>{overrideFeedback}</p> : null}
+
+        {overrideError ? (
+          <div className="error-panel">
+            <p>Override action failed.</p>
+            <pre>{overrideError}</pre>
+          </div>
+        ) : null}
+
+        <label htmlFor="override-recommended-action">
+          Override recommended action
+        </label>
+        <select
+          id="override-recommended-action"
+          value={overrideRecommendedAction}
+          onChange={(event) =>
+            setOverrideRecommendedAction(
+              event.target.value as
+                | "approve"
+                | "review"
+                | "escalate"
+                | "request_more_evidence",
+            )
+          }
+        >
+          <option value="review">review</option>
+          <option value="approve">approve</option>
+          <option value="escalate">escalate</option>
+          <option value="request_more_evidence">request_more_evidence</option>
+        </select>
+
+        <label htmlFor="override-reason-code">Override reason code</label>
+        <input
+          id="override-reason-code"
+          type="text"
+          value={overrideReasonCode}
+          onChange={(event) => setOverrideReasonCode(event.target.value)}
+          placeholder="Required override reason code"
+        />
+
+        <label htmlFor="override-comment">Override comment</label>
+        <textarea
+          id="override-comment"
+          value={overrideComment}
+          onChange={(event) => setOverrideComment(event.target.value)}
+          rows={3}
+          placeholder="Required note for the override action"
+        />
+
+        <label htmlFor="override-priority">
+          Override recommended priority
+        </label>
+        <input
+          id="override-priority"
+          type="text"
+          value={overrideRecommendedPriority}
+          onChange={(event) => setOverrideRecommendedPriority(event.target.value)}
+          placeholder="Optional recommended priority"
+        />
+
+        <label htmlFor="override-summary">Override executive summary</label>
+        <textarea
+          id="override-summary"
+          value={overrideExecutiveSummary}
+          onChange={(event) => setOverrideExecutiveSummary(event.target.value)}
+          rows={3}
+          placeholder="Optional executive summary"
+        />
+
+        <div className="header-actions">
+          <button
+            type="button"
+            onClick={() => overrideMutation.mutate()}
+            disabled={overrideMutation.isPending}
+          >
+            {overrideMutation.isPending ? "Overriding..." : "Override task"}
           </button>
         </div>
       </div>

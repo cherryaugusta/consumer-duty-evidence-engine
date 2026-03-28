@@ -66,6 +66,19 @@ export type EscalateReviewTaskInput = {
   comment: string;
 };
 
+export type OverrideReviewTaskInput = {
+  recommended_action:
+    | "approve"
+    | "review"
+    | "escalate"
+    | "request_more_evidence";
+  override_reason_code: string;
+  comment: string;
+  recommended_priority?: string;
+  executive_summary?: string;
+  structured_rationale?: Record<string, unknown>;
+};
+
 export async function fetchReviewTasks(): Promise<PaginatedReviewTasks> {
   const response = await api.get<PaginatedReviewTasks>("/review-tasks/");
   return response.data;
@@ -104,6 +117,17 @@ export async function escalateReviewTask(
 ): Promise<ReviewTask> {
   const response = await api.post<ReviewTask>(
     `/review-tasks/${id}/escalate/`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function overrideReviewTask(
+  id: string,
+  payload: OverrideReviewTaskInput,
+): Promise<ReviewTask> {
+  const response = await api.post<ReviewTask>(
+    `/review-tasks/${id}/override/`,
     payload,
   );
   return response.data;
