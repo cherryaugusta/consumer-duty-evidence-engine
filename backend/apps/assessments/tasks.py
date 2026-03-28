@@ -5,6 +5,7 @@ from celery import shared_task
 from apps.assessments.services import assess_case_support, detect_case_contradictions
 from apps.audits.services import emit_audit_event
 from apps.cases.models import ReviewCase
+from apps.cases.services import transition_case
 from apps.core.constants import CaseStatus
 from apps.recommendations.tasks import recommend_case_task
 
@@ -42,8 +43,21 @@ def assess_case_task(self, case_id: str):
         assessments = assess_case_support(case)
         contradictions = detect_case_contradictions(case)
 
-        case.status = CaseStatus.ASSESSED
-        case.save(update_fields=["status", "updated_at"])
+        case.refresh_from_db(fields=["status", "review_status", "degraded_mode_active"])
+
+        if case.status != CaseStatus.ASSESSED:
+            transition_case(
+                case=case,
+                new_status=CaseStatus.ASSESSED,
+                correlation_id=case.correlation_id,
+                actor_type="job",
+                actor_id=self.request.id,
+                message="Assessment completed",
+                payload={
+                    "task_id": self.request.id,
+                    "stage": "assessment",
+                },
+            )
 
         emit_audit_event(
             case=case,
