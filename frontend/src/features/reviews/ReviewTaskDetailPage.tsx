@@ -1,7 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
-import { fetchReviewTask } from "../../api/reviewTasks";
+import { assignReviewTask, fetchReviewTask } from "../../api/reviewTasks";
 
 function formatDateTime(value: string): string {
   return new Date(value).toLocaleString();
@@ -31,13 +36,51 @@ function reviewerLabel(reviewer: {
   return fullName || reviewer.username;
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Unknown error";
+}
+
 export function ReviewTaskDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const [assignComment, setAssignComment] = useState("");
+  const [assignFeedback, setAssignFeedback] = useState("");
+  const [assignError, setAssignError] = useState("");
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["review-task", id],
     queryFn: () => fetchReviewTask(id as string),
     enabled: Boolean(id),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) {
+        throw new Error("Review task identifier is missing.");
+      }
+
+      return assignReviewTask(id, {
+        comment: assignComment.trim(),
+      });
+    },
+    onSuccess: async () => {
+      setAssignError("");
+      setAssignFeedback("Review task assigned successfully.");
+      setAssignComment("");
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["review-task", id] }),
+        queryClient.invalidateQueries({ queryKey: ["review-tasks"] }),
+      ]);
+    },
+    onError: (mutationError) => {
+      setAssignFeedback("");
+      setAssignError(getErrorMessage(mutationError));
+    },
   });
 
   if (!id) {
@@ -202,6 +245,41 @@ export function ReviewTaskDetailPage() {
       </div>
 
       <div className="panel">
+        <h3>Task actions</h3>
+        <p className="panel-subtitle">
+          Minimal frontend action surface for assigning this review task.
+        </p>
+
+        {assignFeedback ? <p>{assignFeedback}</p> : null}
+
+        {assignError ? (
+          <div className="error-panel">
+            <p>Assign action failed.</p>
+            <pre>{assignError}</pre>
+          </div>
+        ) : null}
+
+        <label htmlFor="assign-comment">Assignment comment</label>
+        <textarea
+          id="assign-comment"
+          value={assignComment}
+          onChange={(event) => setAssignComment(event.target.value)}
+          rows={3}
+          placeholder="Optional note for the assignment action"
+        />
+
+        <div className="header-actions">
+          <button
+            type="button"
+            onClick={() => assignMutation.mutate()}
+            disabled={assignMutation.isPending}
+          >
+            {assignMutation.isPending ? "Assigning..." : "Assign to me"}
+          </button>
+        </div>
+      </div>
+
+      <div className="panel">
         <h3>Reviewer actions</h3>
         <p className="panel-subtitle">
           Recorded analyst actions for this task.
@@ -227,7 +305,7 @@ export function ReviewTaskDetailPage() {
                     <td>{action.action_type}</td>
                     <td>{reviewerLabel(action.reviewer)}</td>
                     <td>{action.comment}</td>
-                    <td>{action.override_reason_code ?? "—"}</td>
+                    <td>{action.override_reason_code ?? "\u2014"}</td>
                     <td>{formatDateTime(action.created_at)}</td>
                   </tr>
                 ))}

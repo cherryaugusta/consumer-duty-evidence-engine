@@ -53,6 +53,11 @@ export type PaginatedReviewTasks = {
   results: ReviewTask[];
 };
 
+export type AssignReviewTaskInput = {
+  assignee_id?: number;
+  comment?: string;
+};
+
 export async function fetchReviewTasks(): Promise<PaginatedReviewTasks> {
   const response = await api.get<PaginatedReviewTasks>("/review-tasks/");
   return response.data;
@@ -60,5 +65,16 @@ export async function fetchReviewTasks(): Promise<PaginatedReviewTasks> {
 
 export async function fetchReviewTask(id: string): Promise<ReviewTask> {
   const response = await api.get<ReviewTask>(`/review-tasks/${id}/`);
+  return response.data;
+}
+
+export async function assignReviewTask(
+  id: string,
+  payload: AssignReviewTaskInput,
+): Promise<ReviewTask> {
+  const response = await api.post<ReviewTask>(
+    `/review-tasks/${id}/assign/`,
+    payload,
+  );
   return response.data;
 }
