@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { CaseDetailPage } from "./features/cases/CaseDetailPage";
 import { CasesPage } from "./features/cases/CasesPage";
+import { EvalDashboardPage } from "./features/evals/EvalDashboardPage";
 import { MetricsPage } from "./features/metrics/MetricsPage";
 import { ReviewQueuePage } from "./features/reviews/ReviewQueuePage";
 import { ReviewTaskDetailPage } from "./features/reviews/ReviewTaskDetailPage";
@@ -32,6 +33,7 @@ function App() {
           <Link to="/">Cases</Link>
           <Link to="/review-tasks">Review Queue</Link>
           <Link to="/metrics">Metrics</Link>
+          <Link to="/evals">Evals</Link>
         </nav>
 
         <div className="token-panel">
@@ -56,6 +58,7 @@ function App() {
           <Route path="/review-tasks" element={<ReviewQueuePage />} />
           <Route path="/review-tasks/:id" element={<ReviewTaskDetailPage />} />
           <Route path="/metrics" element={<MetricsPage />} />
+          <Route path="/evals" element={<EvalDashboardPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
