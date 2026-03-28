@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.artifacts.tasks import queue_case_parsing_if_ready
+from apps.assessments.serializers import ContradictionFlagSerializer, SupportAssessmentSerializer
+from apps.audits.serializers import AuditEventSerializer
 from apps.cases.models import ReviewCase
 from apps.cases.serializers import (
     CaseReplaySerializer,
@@ -13,12 +15,10 @@ from apps.cases.serializers import (
 )
 from apps.cases.services import transition_case
 from apps.core.constants import CaseStatus
+from apps.extraction.serializers import ClaimSerializer
+from apps.obligations.serializers import EvidenceLinkSerializer
 from apps.recommendations.models import Recommendation
 from apps.recommendations.serializers import RecommendationSerializer
-
-# -------------------------
-# CORE CASE VIEWS
-# -------------------------
 
 
 class CaseListCreateView(APIView):
@@ -39,11 +39,6 @@ class CaseDetailView(APIView):
         return Response(ReviewCaseSerializer(case).data)
 
 
-# -------------------------
-# PIPELINE CONTROL
-# -------------------------
-
-
 class CaseRetryView(APIView):
     RETRYABLE_STATUSES = {
         CaseStatus.FAILED,
@@ -53,6 +48,10 @@ class CaseRetryView(APIView):
         case = get_object_or_404(ReviewCase, pk=pk)
         serializer = CaseRetrySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        actor_id = None
+        if getattr(request, "user", None) and request.user.is_authenticated:
+            actor_id = str(request.user.id)
 
         if case.status not in self.RETRYABLE_STATUSES:
             return Response(
@@ -70,11 +69,7 @@ class CaseRetryView(APIView):
             new_status=CaseStatus.INGESTION_PENDING,
             correlation_id=case.correlation_id,
             actor_type="user",
-            actor_id=(
-                str(request.user.id)
-                if getattr(request, "user", None) and request.user.is_authenticated
-                else None
-            ),
+            actor_id=actor_id,
             message="Case retry requested",
             payload={
                 "reason": serializer.validated_data.get("reason", ""),
@@ -88,11 +83,7 @@ class CaseRetryView(APIView):
             new_status=CaseStatus.PARSING,
             correlation_id=case.correlation_id,
             actor_type="user",
-            actor_id=(
-                str(request.user.id)
-                if getattr(request, "user", None) and request.user.is_authenticated
-                else None
-            ),
+            actor_id=actor_id,
             message="Retry queued parsing",
             payload={
                 "reason": serializer.validated_data.get("reason", ""),
@@ -121,24 +112,34 @@ class CaseReplayView(APIView):
         )
 
 
-# -------------------------
-# DATA VIEWS (SAFE)
-# -------------------------
-
-
 class CaseClaimsView(APIView):
     def get(self, request, pk):
-        return Response([])
+        case = get_object_or_404(ReviewCase, pk=pk)
+        claims = case.claims.all().order_by("created_at")
+        return Response(ClaimSerializer(claims, many=True).data)
 
 
 class CaseEvidenceLinksView(APIView):
     def get(self, request, pk):
-        return Response([])
+        case = get_object_or_404(ReviewCase, pk=pk)
+        evidence_links = case.evidence_links.all().order_by("claim_id", "outcome_id", "id")
+        return Response(EvidenceLinkSerializer(evidence_links, many=True).data)
 
 
 class CaseAssessmentsView(APIView):
     def get(self, request, pk):
-        return Response([])
+        case = get_object_or_404(ReviewCase, pk=pk)
+        assessments = case.assessments.all().order_by("created_at")
+        contradictions = case.contradiction_flags.all().order_by("created_at")
+        return Response(
+            {
+                "assessments": SupportAssessmentSerializer(assessments, many=True).data,
+                "contradictions": ContradictionFlagSerializer(
+                    contradictions,
+                    many=True,
+                ).data,
+            }
+        )
 
 
 class CaseRecommendationView(APIView):
@@ -158,9 +159,13 @@ class CaseRecommendationView(APIView):
 
 class CaseAuditEventsView(APIView):
     def get(self, request, pk):
-        return Response([])
+        case = get_object_or_404(ReviewCase, pk=pk)
+        audit_events = case.audit_events.all().order_by("created_at")
+        return Response(AuditEventSerializer(audit_events, many=True).data)
 
 
 class CaseTimelineView(APIView):
     def get(self, request, pk):
-        return Response([])
+        case = get_object_or_404(ReviewCase, pk=pk)
+        audit_events = case.audit_events.all().order_by("created_at")
+        return Response(AuditEventSerializer(audit_events, many=True).data)
