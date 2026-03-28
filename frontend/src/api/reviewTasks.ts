@@ -62,6 +62,10 @@ export type ApproveReviewTaskInput = {
   comment: string;
 };
 
+export type EscalateReviewTaskInput = {
+  comment: string;
+};
+
 export async function fetchReviewTasks(): Promise<PaginatedReviewTasks> {
   const response = await api.get<PaginatedReviewTasks>("/review-tasks/");
   return response.data;
@@ -89,6 +93,17 @@ export async function approveReviewTask(
 ): Promise<ReviewTask> {
   const response = await api.post<ReviewTask>(
     `/review-tasks/${id}/approve/`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function escalateReviewTask(
+  id: string,
+  payload: EscalateReviewTaskInput,
+): Promise<ReviewTask> {
+  const response = await api.post<ReviewTask>(
+    `/review-tasks/${id}/escalate/`,
     payload,
   );
   return response.data;

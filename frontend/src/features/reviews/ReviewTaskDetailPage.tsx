@@ -9,6 +9,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   approveReviewTask,
   assignReviewTask,
+  escalateReviewTask,
   fetchReviewTask,
 } from "../../api/reviewTasks";
 
@@ -57,6 +58,9 @@ export function ReviewTaskDetailPage() {
   const [approveComment, setApproveComment] = useState("");
   const [approveFeedback, setApproveFeedback] = useState("");
   const [approveError, setApproveError] = useState("");
+  const [escalateComment, setEscalateComment] = useState("");
+  const [escalateFeedback, setEscalateFeedback] = useState("");
+  const [escalateError, setEscalateError] = useState("");
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["review-task", id],
@@ -118,6 +122,37 @@ export function ReviewTaskDetailPage() {
     onError: (mutationError) => {
       setApproveFeedback("");
       setApproveError(getErrorMessage(mutationError));
+    },
+  });
+
+  const escalateMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) {
+        throw new Error("Review task identifier is missing.");
+      }
+
+      const trimmedComment = escalateComment.trim();
+      if (!trimmedComment) {
+        throw new Error("Escalation comment is required.");
+      }
+
+      return escalateReviewTask(id, {
+        comment: trimmedComment,
+      });
+    },
+    onSuccess: async () => {
+      setEscalateError("");
+      setEscalateFeedback("Review task escalated successfully.");
+      setEscalateComment("");
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["review-task", id] }),
+        queryClient.invalidateQueries({ queryKey: ["review-tasks"] }),
+      ]);
+    },
+    onError: (mutationError) => {
+      setEscalateFeedback("");
+      setEscalateError(getErrorMessage(mutationError));
     },
   });
 
@@ -285,7 +320,8 @@ export function ReviewTaskDetailPage() {
       <div className="panel">
         <h3>Task actions</h3>
         <p className="panel-subtitle">
-          Minimal frontend action surface for assigning and approving this review task.
+          Minimal frontend action surface for assigning, approving, and escalating
+          this review task.
         </p>
 
         {assignFeedback ? <p>{assignFeedback}</p> : null}
@@ -343,6 +379,36 @@ export function ReviewTaskDetailPage() {
             disabled={approveMutation.isPending}
           >
             {approveMutation.isPending ? "Approving..." : "Approve task"}
+          </button>
+        </div>
+
+        <hr style={{ margin: "1.5rem 0" }} />
+
+        {escalateFeedback ? <p>{escalateFeedback}</p> : null}
+
+        {escalateError ? (
+          <div className="error-panel">
+            <p>Escalate action failed.</p>
+            <pre>{escalateError}</pre>
+          </div>
+        ) : null}
+
+        <label htmlFor="escalate-comment">Escalation comment</label>
+        <textarea
+          id="escalate-comment"
+          value={escalateComment}
+          onChange={(event) => setEscalateComment(event.target.value)}
+          rows={3}
+          placeholder="Required note for the escalation action"
+        />
+
+        <div className="header-actions">
+          <button
+            type="button"
+            onClick={() => escalateMutation.mutate()}
+            disabled={escalateMutation.isPending}
+          >
+            {escalateMutation.isPending ? "Escalating..." : "Escalate task"}
           </button>
         </div>
       </div>
