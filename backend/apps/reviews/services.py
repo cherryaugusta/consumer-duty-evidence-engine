@@ -154,7 +154,7 @@ def assign_review_task(
     ReviewerAction.objects.create(
         review_task=review_task,
         reviewer=reviewer,
-        action_type=ReviewerActionType.CLOSE,
+        action_type=ReviewerActionType.ASSIGN,
         old_value={},
         new_value={
             "assigned_to": assignee.id,

@@ -16,6 +16,7 @@ class ReviewReasonCode(models.TextChoices):
 
 
 class ReviewerActionType(models.TextChoices):
+    ASSIGN = "assign", "Assign"
     APPROVE = "approve", "Approve"
     OVERRIDE = "override", "Override"
     ESCALATE = "escalate", "Escalate"
