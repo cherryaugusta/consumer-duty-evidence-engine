@@ -114,6 +114,7 @@ export function ReviewQueuePage() {
                   <th>Case Status</th>
                   <th>Priority</th>
                   <th>SLA Due</th>
+                  <th>Task</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,6 +133,9 @@ export function ReviewQueuePage() {
                     <td>{task.case.status}</td>
                     <td>{task.case.priority}</td>
                     <td>{formatDateTime(task.sla_due_at)}</td>
+                    <td>
+                      <Link to={`/review-tasks/${task.id}`}>Open</Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

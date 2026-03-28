@@ -57,3 +57,8 @@ export async function fetchReviewTasks(): Promise<PaginatedReviewTasks> {
   const response = await api.get<PaginatedReviewTasks>("/review-tasks/");
   return response.data;
 }
+
+export async function fetchReviewTask(id: string): Promise<ReviewTask> {
+  const response = await api.get<ReviewTask>(`/review-tasks/${id}/`);
+  return response.data;
+}

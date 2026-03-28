@@ -4,6 +4,7 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { CaseDetailPage } from "./features/cases/CaseDetailPage";
 import { CasesPage } from "./features/cases/CasesPage";
 import { ReviewQueuePage } from "./features/reviews/ReviewQueuePage";
+import { ReviewTaskDetailPage } from "./features/reviews/ReviewTaskDetailPage";
 
 function App() {
   const [token, setToken] = useState<string>(
@@ -51,6 +52,7 @@ function App() {
           <Route path="/" element={<CasesPage />} />
           <Route path="/cases/:id" element={<CaseDetailPage />} />
           <Route path="/review-tasks" element={<ReviewQueuePage />} />
+          <Route path="/review-tasks/:id" element={<ReviewTaskDetailPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
