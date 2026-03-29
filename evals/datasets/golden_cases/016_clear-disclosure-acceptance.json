@@ -1,0 +1,32 @@
+{
+  "case_id": "eval-016-clear-disclosure-acceptance",
+  "scenario_type": "well_supported_disclosure",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer later queried the monthly fee but acknowledged it may have been shown during onboarding."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "The disclosure clearly states a GBP 7 monthly fee, when it applies, and that the customer confirmed acceptance before activation."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

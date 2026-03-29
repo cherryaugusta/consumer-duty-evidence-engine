@@ -1,0 +1,28 @@
+{
+  "case_id": "eval-cite-005-disclosure-only",
+  "scenario_type": "citation_validation",
+  "artifacts": [
+    {
+      "artifact_type": "disclosure",
+      "text": "The disclosure clearly states the monthly fee, usage conditions, and cancellation terms in one place."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "monthly fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

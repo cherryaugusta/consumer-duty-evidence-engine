@@ -1,0 +1,42 @@
+{
+  "case_id": "eval-017-contradictory-fee-explanation",
+  "scenario_type": "contradiction",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says they were told there would be no monthly fee."
+    },
+    {
+      "artifact_type": "support_transcript",
+      "text": "Adviser note states the product includes a monthly fee and that this was discussed during the call."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "Product disclosure states a recurring monthly fee applies to all active accounts."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "monthly fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "contradictory_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "support_transcript"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "case_id": "eval-021-old-policy-vs-current-support",
+  "scenario_type": "stale_evidence",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says support relied on an old process and did not follow the current servicing guidance."
+    },
+    {
+      "artifact_type": "policy_excerpt",
+      "text": "Archived 2021 support policy allowed longer callback windows and older disclosure wording."
+    },
+    {
+      "artifact_type": "internal_note",
+      "text": "Current servicing standard requires same day acknowledgement for routine customer support issues."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "support_delay",
+      "claim_text_contains": "support"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_support"
+  ],
+  "expected_support_status": "stale_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "policy_excerpt"
+    },
+    {
+      "artifact_type": "internal_note"
+    }
+  ]
+}

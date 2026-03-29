@@ -1,0 +1,35 @@
+{
+  "case_id": "eval-route-005-contradiction-forces-review",
+  "scenario_type": "manual_review_routing",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says they were told there would be no recurring monthly fee."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "The product disclosure clearly states a recurring monthly fee applies."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "monthly fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "contradictory_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "case_id": "eval-cite-003-stale-script-citation",
+  "scenario_type": "citation_validation",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says the adviser used outdated wording about account fees."
+    },
+    {
+      "artifact_type": "script",
+      "text": "Old call script references a previous monthly fee amount and an outdated waiver rule."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "Current disclosure sets out the revised monthly fee and updated waiver criteria."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "stale_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "script"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

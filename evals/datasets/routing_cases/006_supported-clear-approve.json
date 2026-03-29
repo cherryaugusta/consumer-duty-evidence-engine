@@ -1,0 +1,32 @@
+{
+  "case_id": "eval-route-006-supported-clear-approve",
+  "scenario_type": "clear_supported_case",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer queried the charge but later confirmed the explanation was clear."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "Disclosure clearly states the monthly fee, when it applies, and that the customer accepted the terms."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "charge"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

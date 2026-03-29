@@ -1,0 +1,39 @@
+{
+  "case_id": "eval-020-fee-wording-supported",
+  "scenario_type": "well_supported_disclosure",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer challenged the account fee wording after signup."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "The product summary clearly states the monthly account fee, usage conditions, and cancellation terms in plain language."
+    },
+    {
+      "artifact_type": "policy_excerpt",
+      "text": "Disclosure policy requires key charges to be presented prominently before the customer proceeds."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "disclosure"
+    },
+    {
+      "artifact_type": "policy_excerpt"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "case_id": "eval-cite-001-fee-complaint-disclosure",
+  "scenario_type": "citation_validation",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says the monthly fee was not made clear before the product was opened."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "A GBP 5 monthly fee applies, but the summary wording is brief and could be overlooked."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "monthly fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "weak_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

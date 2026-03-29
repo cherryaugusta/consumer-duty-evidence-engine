@@ -1,0 +1,38 @@
+{
+  "case_id": "eval-018-support-backlog-acknowledged",
+  "scenario_type": "support_delay",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says support took too long to answer and they had to chase the team several times."
+    },
+    {
+      "artifact_type": "support_transcript",
+      "text": "Support manager acknowledges a backlog, notes delayed responses, and confirms service levels were missed."
+    },
+    {
+      "artifact_type": "policy_excerpt",
+      "text": "Complaint handling policy requires prompt acknowledgement and timely resolution updates."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "support_delay",
+      "claim_text_contains": "too long"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_support"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "support_transcript"
+    },
+    {
+      "artifact_type": "policy_excerpt"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "case_id": "eval-022-product-explanation-gap",
+  "scenario_type": "poor_outcome_indicator",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says the product explanation focused on benefits but did not make the service limits clear."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "The disclosure refers generally to service limits but does not explain them clearly in the main summary."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "poor_outcome_indicator",
+      "claim_text_contains": "service limits"
+    }
+  ],
+  "expected_outcomes": [
+    "products_services",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "weak_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

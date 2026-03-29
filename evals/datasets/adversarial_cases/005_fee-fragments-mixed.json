@@ -1,0 +1,35 @@
+{
+  "case_id": "eval-adv-005-fee-fragments-mixed",
+  "scenario_type": "adversarial_formatting",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "monthly?? fee?? not clear // customer asked twice // still confused // charge appeared later"
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "fee details: buried in dense wording, fragmented, easy to miss"
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "weak_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

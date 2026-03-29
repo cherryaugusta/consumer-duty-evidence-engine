@@ -1,0 +1,35 @@
+{
+  "case_id": "eval-013-missing-fee-terms",
+  "scenario_type": "missing_disclosure",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says a monthly fee was taken but the key terms were never clearly shown before signup."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "General account information was provided, but no clear fee table or monthly charge wording was included."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "monthly fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "missing_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}

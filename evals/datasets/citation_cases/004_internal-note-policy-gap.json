@@ -1,0 +1,38 @@
+{
+  "case_id": "eval-cite-004-internal-note-policy-gap",
+  "scenario_type": "citation_validation",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says staff gave inconsistent servicing guidance during a support interaction."
+    },
+    {
+      "artifact_type": "internal_note",
+      "text": "Internal note records uncertainty about which service process should apply to the case."
+    },
+    {
+      "artifact_type": "policy_excerpt",
+      "text": "Current support policy defines a single required process for this type of servicing issue."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "support_delay",
+      "claim_text_contains": "support"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_support"
+  ],
+  "expected_support_status": "weak_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "internal_note"
+    },
+    {
+      "artifact_type": "policy_excerpt"
+    }
+  ]
+}

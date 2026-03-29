@@ -1,0 +1,34 @@
+{
+  "case_id": "eval-014-service-delay-escalation",
+  "scenario_type": "support_delay",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer reports waiting three weeks for a response and says support repeatedly failed to resolve the issue."
+    },
+    {
+      "artifact_type": "support_transcript",
+      "text": "Internal support notes show multiple handoffs, delayed callbacks, and no confirmed resolution within the promised timeframe."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "support_delay",
+      "claim_text_contains": "waiting"
+    }
+  ],
+  "expected_outcomes": [
+    "consumer_support"
+  ],
+  "expected_support_status": "supported",
+  "expected_requires_review": false,
+  "expected_recommended_action": "approve",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "complaint"
+    },
+    {
+      "artifact_type": "support_transcript"
+    }
+  ]
+}

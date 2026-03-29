@@ -1,0 +1,39 @@
+{
+  "case_id": "eval-015-outdated-script-fee",
+  "scenario_type": "stale_evidence",
+  "artifacts": [
+    {
+      "artifact_type": "complaint",
+      "text": "Customer says the adviser described an old fee structure that did not match the current product terms."
+    },
+    {
+      "artifact_type": "script",
+      "text": "Legacy script from 2022 refers to a GBP 3 monthly charge and old cancellation wording."
+    },
+    {
+      "artifact_type": "disclosure",
+      "text": "Current disclosure states a GBP 6 monthly fee and revised cancellation terms."
+    }
+  ],
+  "expected_claims": [
+    {
+      "claim_type": "unclear_fee",
+      "claim_text_contains": "fee"
+    }
+  ],
+  "expected_outcomes": [
+    "price_value",
+    "consumer_understanding"
+  ],
+  "expected_support_status": "stale_support",
+  "expected_requires_review": true,
+  "expected_recommended_action": "review",
+  "expected_citation_targets": [
+    {
+      "artifact_type": "script"
+    },
+    {
+      "artifact_type": "disclosure"
+    }
+  ]
+}
