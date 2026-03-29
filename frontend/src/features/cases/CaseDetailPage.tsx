@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+
 import {
   getArtifactSections,
   getCase,
@@ -82,7 +83,7 @@ export function CaseDetailPage() {
   }
 
   if (caseQuery.isLoading) {
-    return <div className="panel">Loading case…</div>;
+    return <div className="panel">Loading case...</div>;
   }
 
   if (caseQuery.isError || !caseQuery.data) {
@@ -104,12 +105,16 @@ export function CaseDetailPage() {
   const artifacts = artifactsQuery.data ?? [];
   const sections = sectionsQuery.data ?? [];
 
+  const hasEvalLinkage = Boolean(
+    reviewCase.eval_case_id || reviewCase.latest_eval_run_id,
+  );
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <Link to="/" className="back-link">
-            ← Back to cases
+            &lt; Back to cases
           </Link>
           <h2>{reviewCase.reference_code}</h2>
           <p>{reviewCase.title}</p>
@@ -123,6 +128,25 @@ export function CaseDetailPage() {
           </div>
         </div>
       </div>
+
+      {hasEvalLinkage ? (
+        <section className="panel">
+          <h3>Eval linkage</h3>
+          <div className="stack">
+            {reviewCase.eval_case_id ? (
+              <div>
+                <strong>Eval case ID:</strong> {reviewCase.eval_case_id}
+              </div>
+            ) : null}
+            {reviewCase.latest_eval_run_id ? (
+              <div>
+                <strong>Latest eval run ID:</strong>{" "}
+                {reviewCase.latest_eval_run_id}
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <div className="panel-grid">
         <section className="panel">
@@ -311,7 +335,9 @@ export function CaseDetailPage() {
                       <div className="section-meta">
                         <strong>Section {section.section_index}</strong>
                         {section.heading ? <span>{section.heading}</span> : null}
-                        {section.page_number ? <span>Page {section.page_number}</span> : null}
+                        {section.page_number ? (
+                          <span>Page {section.page_number}</span>
+                        ) : null}
                       </div>
                       <p>{section.text}</p>
                     </div>

@@ -9,6 +9,8 @@ export type ReviewCase = {
   priority: string;
   case_type: string;
   correlation_id: string;
+  latest_eval_run_id: string | null;
+  eval_case_id: string | null;
   degraded_mode_active: boolean;
   created_at: string;
   updated_at: string;

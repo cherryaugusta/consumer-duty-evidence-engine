@@ -24,6 +24,7 @@ from apps.assessments.models import SupportAssessment  # noqa: E402
 from apps.assessments.services import assess_case_support, detect_case_contradictions  # noqa: E402
 from apps.cases.models import ReviewCase  # noqa: E402
 from apps.core.constants import CaseStatus  # noqa: E402
+from apps.evals.models import EvalRun, EvalStatus  # noqa: E402
 from apps.extraction.models import Claim  # noqa: E402
 from apps.extraction.services import extract_claims_for_case  # noqa: E402
 from apps.obligations.models import ConsumerDutyOutcome, EvidenceLink  # noqa: E402
@@ -136,7 +137,74 @@ def infer_case_type(eval_case: dict) -> str:
     return "complaint_review"
 
 
-def create_case(eval_case: dict) -> ReviewCase:
+def build_run_label() -> str:
+    return f"real-run-{datetime.now(UTC).isoformat()}"
+
+
+def create_eval_run(eval_files: list[Path], run_label: str) -> EvalRun:
+    dataset_directories = [
+        "golden_cases",
+        "adversarial_cases",
+        "routing_cases",
+        "citation_cases",
+    ]
+
+    config_snapshot = {
+        "dataset_directories": dataset_directories,
+        "eval_file_count": len(eval_files),
+        "llm_provider": getattr(settings, "MODEL_PROVIDER", None),
+        "llm_model": getattr(settings, "MODEL_NAME", None),
+        "degraded_mode_default": getattr(settings, "DEGRADED_MODE_DEFAULT", False),
+        "simulate_provider_failure": getattr(settings, "SIMULATE_PROVIDER_FAILURE", False),
+        "simulate_schema_failure": getattr(settings, "SIMULATE_SCHEMA_FAILURE", False),
+    }
+
+    return EvalRun.objects.create(
+        run_label=run_label,
+        config_snapshot=config_snapshot,
+        started_at=datetime.now(UTC),
+        status=EvalStatus.RUNNING,
+    )
+
+
+def mark_eval_run_succeeded(eval_run: EvalRun, report: dict, output_path: Path) -> None:
+    eval_run.finished_at = datetime.now(UTC)
+    eval_run.status = EvalStatus.SUCCEEDED
+    eval_run.summary_metrics = report["summary_metrics"]
+    eval_run.config_snapshot = {
+        **(eval_run.config_snapshot or {}),
+        "report_path": str(output_path),
+        "total_cases": report["total_cases"],
+        "completed_at": eval_run.finished_at.isoformat(),
+    }
+    eval_run.save(
+        update_fields=[
+            "finished_at",
+            "status",
+            "summary_metrics",
+            "config_snapshot",
+        ]
+    )
+
+
+def mark_eval_run_failed(eval_run: EvalRun, error: Exception) -> None:
+    eval_run.finished_at = datetime.now(UTC)
+    eval_run.status = EvalStatus.FAILED
+    eval_run.config_snapshot = {
+        **(eval_run.config_snapshot or {}),
+        "failed_at": eval_run.finished_at.isoformat(),
+        "error_message": str(error),
+    }
+    eval_run.save(
+        update_fields=[
+            "finished_at",
+            "status",
+            "config_snapshot",
+        ]
+    )
+
+
+def create_case(eval_case: dict, eval_run: EvalRun) -> ReviewCase:
     return ReviewCase.objects.create(
         reference_code=f"EVAL-{uuid.uuid4().hex[:8].upper()}",
         title=f"Eval: {eval_case['case_id']}",
@@ -145,6 +213,7 @@ def create_case(eval_case: dict) -> ReviewCase:
         status=CaseStatus.INGESTION_PENDING,
         dedupe_key=f"eval::{eval_case['case_id']}",
         eval_case_id=eval_case["case_id"],
+        latest_eval_run_id=eval_run.id,
     )
 
 
@@ -170,8 +239,8 @@ def create_artifacts(case: ReviewCase, eval_case: dict) -> list[SourceArtifact]:
     return artifacts
 
 
-def run_case(eval_case: dict) -> ReviewCase:
-    case = create_case(eval_case)
+def run_case(eval_case: dict, eval_run: EvalRun) -> ReviewCase:
+    case = create_case(eval_case, eval_run)
     artifacts = create_artifacts(case, eval_case)
 
     case.status = CaseStatus.PARSING
@@ -469,13 +538,13 @@ def build_ranked_case_lists(results: list[dict]) -> tuple[list[dict], list[dict]
     return top_failures, top_successes
 
 
-def build_report(results: list[dict], metrics: dict) -> dict:
+def build_report(results: list[dict], metrics: dict, run_label: str) -> dict:
     failure_breakdown = build_failure_breakdown(results)
     scenario_breakdown = build_scenario_breakdown(results)
     top_failures, top_successes = build_ranked_case_lists(results)
 
     return {
-        "run_label": f"real-run-{datetime.now(UTC).isoformat()}",
+        "run_label": run_label,
         "summary_metrics": metrics,
         "thresholds": {
             "mapping_accuracy_min": 0.8,
@@ -512,38 +581,46 @@ def main():
 
     print("All eval cases passed schema validation")
 
+    run_label = build_run_label()
+    eval_run = create_eval_run(eval_files, run_label)
     results = []
 
-    for eval_case in eval_cases:
-        print(f"\n--- Running {eval_case['case_id']} ---")
-        case = run_case(eval_case)
-        result = evaluate_case(case, eval_case)
-        results.append(result)
+    try:
+        for eval_case in eval_cases:
+            print(f"\n--- Running {eval_case['case_id']} ---")
+            case = run_case(eval_case, eval_run)
+            result = evaluate_case(case, eval_case)
+            results.append(result)
 
-        print(
-            json.dumps(
-                {
-                    "case_id": result["case_id"],
-                    "scenario_type": result["scenario_type"],
-                    "score": result["summary"]["score"],
-                    "failed_checks": result["summary"]["failed_checks"],
-                },
-                indent=2,
+            print(
+                json.dumps(
+                    {
+                        "case_id": result["case_id"],
+                        "scenario_type": result["scenario_type"],
+                        "score": result["summary"]["score"],
+                        "failed_checks": result["summary"]["failed_checks"],
+                    },
+                    indent=2,
+                )
             )
-        )
 
-    metrics = aggregate_metrics(results)
-    report = build_report(results, metrics)
+        metrics = aggregate_metrics(results)
+        report = build_report(results, metrics, run_label)
 
-    validate_json(report, eval_report_schema, Path("generated-report"))
+        validate_json(report, eval_report_schema, Path("generated-report"))
 
-    output_path = REPORTS_DIR / "latest-report.json"
-    with open(output_path, "w", encoding="utf-8") as file_handle:
-        json.dump(report, file_handle, indent=2)
+        output_path = REPORTS_DIR / "latest-report.json"
+        with open(output_path, "w", encoding="utf-8") as file_handle:
+            json.dump(report, file_handle, indent=2)
 
-    print(f"\nEval report generated at: {output_path}")
-    print(json.dumps(report["summary_metrics"], indent=2))
-    print(json.dumps(report["failure_breakdown"], indent=2))
+        mark_eval_run_succeeded(eval_run, report, output_path)
+
+        print(f"\nEval report generated at: {output_path}")
+        print(json.dumps(report["summary_metrics"], indent=2))
+        print(json.dumps(report["failure_breakdown"], indent=2))
+    except Exception as exc:
+        mark_eval_run_failed(eval_run, exc)
+        raise
 
 
 if __name__ == "__main__":
