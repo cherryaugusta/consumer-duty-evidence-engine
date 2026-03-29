@@ -91,6 +91,16 @@ jobs:
         run: |
           psql -h 127.0.0.1 -p 5432 -U cdee -d cdee -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
+      - name: Run database migrations
+        working-directory: backend
+        run: |
+          python manage.py migrate
+
+      - name: Run Django system checks
+        working-directory: backend
+        run: |
+          python manage.py check
+
       - name: Run eval suite
         run: |
           python infra/scripts/run_eval_suite.py
@@ -98,3 +108,9 @@ jobs:
       - name: Verify latest eval report exists
         run: |
           test -f evals/reports/latest-report.json
+
+      - name: Upload latest eval report
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-eval-report
+          path: evals/reports/latest-report.json
