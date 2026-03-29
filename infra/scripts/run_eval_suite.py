@@ -144,6 +144,7 @@ def create_case(eval_case: dict) -> ReviewCase:
         correlation_id=str(uuid.uuid4()),
         status=CaseStatus.INGESTION_PENDING,
         dedupe_key=f"eval::{eval_case['case_id']}",
+        eval_case_id=eval_case["case_id"],
     )
 
 
@@ -242,7 +243,10 @@ def evaluate_claims(case: ReviewCase, expected: dict) -> dict:
 def evaluate_outcomes(case: ReviewCase, expected: dict) -> dict:
     actual_codes = {
         normalize_outcome_code(code)
-        for code in EvidenceLink.objects.filter(case=case).values_list("outcome__code", flat=True)
+        for code in EvidenceLink.objects.filter(case=case).values_list(
+            "outcome__code",
+            flat=True,
+        )
     }
     expected_codes = {normalize_outcome_code(code) for code in expected["expected_outcomes"]}
 
@@ -296,7 +300,8 @@ def evaluate_citations(case: ReviewCase, expected: dict) -> dict:
     actual_artifact_types = {
         artifact_type
         for artifact_type in EvidenceLink.objects.filter(case=case).values_list(
-            "section__artifact__artifact_type", flat=True
+            "section__artifact__artifact_type",
+            flat=True,
         )
         if artifact_type
     }

@@ -1,6 +1,11 @@
 from django.urls import path
 
-from apps.evals.views import EvalLatestReportView, EvalRunDetailView, EvalRunListView
+from apps.evals.views import (
+    EvalCaseLookupView,
+    EvalLatestReportView,
+    EvalRunDetailView,
+    EvalRunListView,
+)
 
 urlpatterns = [
     path("evals/", EvalRunListView.as_view(), name="eval-run-list"),
@@ -9,5 +14,10 @@ urlpatterns = [
         "evals/reports/latest/",
         EvalLatestReportView.as_view(),
         name="eval-latest-report",
+    ),
+    path(
+        "evals/lookup/<str:eval_case_id>/",
+        EvalCaseLookupView.as_view(),
+        name="eval-case-lookup",
     ),
 ]

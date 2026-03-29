@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
-import { fetchLatestEvalReport } from "../../api/evals";
+import { fetchEvalCaseLookup, fetchLatestEvalReport } from "../../api/evals";
 
 function formatNumber(value: number): string {
   return value.toLocaleString();
@@ -10,10 +11,27 @@ function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Unknown error";
+}
+
 export function EvalDashboardPage() {
+  const navigate = useNavigate();
+
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["eval-latest-report"],
     queryFn: fetchLatestEvalReport,
+  });
+
+  const openCaseMutation = useMutation({
+    mutationFn: async (evalCaseId: string) => fetchEvalCaseLookup(evalCaseId),
+    onSuccess: (payload) => {
+      navigate(`/cases/${payload.case_id}`);
+    },
   });
 
   if (isLoading) {
@@ -82,6 +100,13 @@ export function EvalDashboardPage() {
           </button>
         </div>
       </div>
+
+      {openCaseMutation.isError ? (
+        <div className="panel error-panel">
+          <p>Failed to open the linked case.</p>
+          <pre>{getErrorMessage(openCaseMutation.error)}</pre>
+        </div>
+      ) : null}
 
       <div className="panel">
         <h3>Latest eval run</h3>
@@ -375,7 +400,15 @@ export function EvalDashboardPage() {
               <tbody>
                 {data.results.map((result) => (
                   <tr key={result.case_id}>
-                    <td>{result.case_id}</td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => openCaseMutation.mutate(result.case_id)}
+                        disabled={openCaseMutation.isPending}
+                      >
+                        {result.case_id}
+                      </button>
+                    </td>
                     <td>{result.scenario_type}</td>
                     <td>{formatPercent(result.summary.score)}</td>
                     <td>{formatNumber(result.summary.passed_checks)}</td>

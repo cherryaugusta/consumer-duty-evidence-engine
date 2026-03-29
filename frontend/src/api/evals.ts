@@ -65,7 +65,20 @@ export type EvalLatestReport = {
   results: EvalResultItem[];
 };
 
+export type EvalCaseLookupResponse = {
+  case_id: string;
+};
+
 export async function fetchLatestEvalReport(): Promise<EvalLatestReport> {
   const response = await api.get<EvalLatestReport>("/evals/reports/latest/");
+  return response.data;
+}
+
+export async function fetchEvalCaseLookup(
+  evalCaseId: string,
+): Promise<EvalCaseLookupResponse> {
+  const response = await api.get<EvalCaseLookupResponse>(
+    `/evals/lookup/${encodeURIComponent(evalCaseId)}/`,
+  );
   return response.data;
 }
