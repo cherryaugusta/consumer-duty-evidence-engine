@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -21,6 +22,9 @@ function getErrorMessage(error: unknown): string {
 
 export function EvalDashboardPage() {
   const navigate = useNavigate();
+  const [selectedScenario, setSelectedScenario] = useState<string>("all");
+  const [selectedFailedCheck, setSelectedFailedCheck] = useState<string>("all");
+  const [minimumScore, setMinimumScore] = useState<string>("0");
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["eval-latest-report"],
@@ -33,6 +37,76 @@ export function EvalDashboardPage() {
       navigate(`/cases/${payload.case_id}`);
     },
   });
+
+  const minimumScoreNumber = Number(minimumScore);
+  const normalizedMinimumScore = Number.isNaN(minimumScoreNumber)
+    ? 0
+    : minimumScoreNumber;
+
+  const scenarioRows = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return Object.entries(data.scenario_breakdown).sort((a, b) =>
+      a[0].localeCompare(b[0]),
+    );
+  }, [data]);
+
+  const scenarioOptions = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(data.results.map((result) => result.scenario_type)),
+    ).sort((a, b) => a.localeCompare(b));
+  }, [data]);
+
+  const failedCheckOptions = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(
+        data.results.flatMap((result) => result.summary.failed_checks ?? []),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+  }, [data]);
+
+  const filteredResults = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return data.results.filter((result) => {
+      const matchesScenario =
+        selectedScenario === "all" || result.scenario_type === selectedScenario;
+
+      const matchesFailedCheck =
+        selectedFailedCheck === "all" ||
+        result.summary.failed_checks.includes(selectedFailedCheck);
+
+      const scoreAsPercent = result.summary.score * 100;
+      const matchesMinimumScore = scoreAsPercent >= normalizedMinimumScore;
+
+      return matchesScenario && matchesFailedCheck && matchesMinimumScore;
+    });
+  }, [data, normalizedMinimumScore, selectedFailedCheck, selectedScenario]);
+
+  const filteredAverageScore = useMemo(() => {
+    if (filteredResults.length === 0) {
+      return 0;
+    }
+
+    const total = filteredResults.reduce(
+      (sum, result) => sum + result.summary.score,
+      0,
+    );
+
+    return total / filteredResults.length;
+  }, [filteredResults]);
 
   if (isLoading) {
     return (
@@ -82,10 +156,6 @@ export function EvalDashboardPage() {
       </section>
     );
   }
-
-  const scenarioRows = Object.entries(data.scenario_breakdown).sort((a, b) =>
-    a[0].localeCompare(b[0]),
-  );
 
   return (
     <section>
@@ -381,8 +451,97 @@ export function EvalDashboardPage() {
         <p className="panel-subtitle">
           Per-case summary for the latest eval report.
         </p>
-        {data.results.length === 0 ? (
-          <p>No eval results found.</p>
+
+        <div className="panel" style={{ marginBottom: 16 }}>
+          <h4>Filters</h4>
+          <p className="panel-subtitle">
+            Narrow the latest eval results by scenario, failed check, and score.
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+              alignItems: "end",
+            }}
+          >
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Scenario</span>
+              <select
+                value={selectedScenario}
+                onChange={(event) => setSelectedScenario(event.target.value)}
+                className="select-input"
+              >
+                <option value="all">All scenarios</option>
+                {scenarioOptions.map((scenario) => (
+                  <option key={scenario} value={scenario}>
+                    {scenario}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Failed check</span>
+              <select
+                value={selectedFailedCheck}
+                onChange={(event) => setSelectedFailedCheck(event.target.value)}
+                className="select-input"
+              >
+                <option value="all">All failed checks</option>
+                {failedCheckOptions.map((failedCheck) => (
+                  <option key={failedCheck} value={failedCheck}>
+                    {failedCheck}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Minimum score (%)</span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={minimumScore}
+                onChange={(event) => setMinimumScore(event.target.value)}
+                className="text-input"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedScenario("all");
+                setSelectedFailedCheck("all");
+                setMinimumScore("0");
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+              marginTop: 16,
+            }}
+          >
+            <div className="stat-chip">
+              Filtered results: {formatNumber(filteredResults.length)}
+            </div>
+            <div className="stat-chip">
+              Filtered average score: {formatPercent(filteredAverageScore)}
+            </div>
+          </div>
+        </div>
+
+        {filteredResults.length === 0 ? (
+          <p>No eval results match the selected filters.</p>
         ) : (
           <div className="table-wrap">
             <table>
@@ -398,7 +557,7 @@ export function EvalDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.results.map((result) => (
+                {filteredResults.map((result) => (
                   <tr key={result.case_id}>
                     <td>
                       <button
