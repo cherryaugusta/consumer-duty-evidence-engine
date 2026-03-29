@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { CaseDetailPage } from "./features/cases/CaseDetailPage";
 import { CasesPage } from "./features/cases/CasesPage";
+import { NewCasePage } from "./features/cases/NewCasePage";
 import { EvalDashboardPage } from "./features/evals/EvalDashboardPage";
 import { MetricsPage } from "./features/metrics/MetricsPage";
 import { ReviewQueuePage } from "./features/reviews/ReviewQueuePage";
@@ -31,6 +32,7 @@ function App() {
 
         <nav className="nav">
           <Link to="/">Cases</Link>
+          <Link to="/cases/new">New Case</Link>
           <Link to="/review-tasks">Review Queue</Link>
           <Link to="/metrics">Metrics</Link>
           <Link to="/evals">Evals</Link>
@@ -54,6 +56,7 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<CasesPage />} />
+          <Route path="/cases/new" element={<NewCasePage />} />
           <Route path="/cases/:id" element={<CaseDetailPage />} />
           <Route path="/review-tasks" element={<ReviewQueuePage />} />
           <Route path="/review-tasks/:id" element={<ReviewTaskDetailPage />} />
