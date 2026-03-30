@@ -14,7 +14,7 @@ It ingests complaints, disclosures, support transcripts, scripts, and policy mat
 ![New case intake](docs/screenshots/02-new-case-intake.png)  
 ![Case detail with evidence sufficiency](docs/screenshots/03-case-detail-weak-support.png)  
 ![Evidence viewer with citations](docs/screenshots/04-evidence-viewer-citations.png)  
-![Review queue](docs/screenshots/05-review-queue-contradictions.png)  
+![Review queue](docs/screenshots/05-review-queue.png)  
 ![Review task context](docs/screenshots/06a-review-task-context.png)  
 ![Review task actions (assignment / approval / escalation)](docs/screenshots/06b-review-task-actions.png)  
 ![Provider failure / insufficient evidence fallback](docs/screenshots/07-degraded-mode-provider-failure.png)  
@@ -43,21 +43,21 @@ The focus is not generating answers, but managing **evidence under uncertainty**
 
 ## What this project demonstrates
 
-- AI-assisted extraction with strict schema validation  
-- rule-assisted outcome mapping to a constrained taxonomy  
+- AI-assisted extraction with strict schema validation
+- rule-assisted outcome mapping to a constrained taxonomy
 - evidence sufficiency scoring:
-  - supported  
-  - weak support  
-  - missing support  
-  - contradictory support  
-  - stale support  
-- contradiction detection across multi-document case bundles  
-- human review queues with assignment, approval, escalation, partial override controls, and audit logging  
-- structured review-task action surface (assignment, approval, escalation, and override inputs)  
-- explicit state machine enforcing workflow correctness  
-- observable async pipelines with WebSocket updates  
-- regression-tested evaluation harness with 40+ benchmark cases  
-- conservative fallback behaviour under provider failure or insufficient evidence  
+  - supported
+  - weak support
+  - missing support
+  - contradictory support
+  - stale support
+- contradiction detection across multi-document case bundles
+- human review queues with assignment, approval, escalation, partial override controls, and audit logging
+- structured review-task action surface (assignment, approval, escalation, and override inputs)
+- explicit state machine enforcing workflow correctness
+- observable async pipelines with WebSocket updates
+- regression-tested evaluation harness with 40+ benchmark cases
+- conservative fallback behaviour under provider failure or insufficient evidence
 
 ---
 
@@ -88,17 +88,17 @@ The focus is not generating answers, but managing **evidence under uncertainty**
 
 ## Core workflow
 
-1. Upload complaint and related artefacts  
-2. Persist artifacts and enqueue ingestion  
-3. Parse and segment documents asynchronously  
-4. Extract structured claims using strict schema validation  
-5. Map claims to Consumer Duty outcome areas  
-6. Link supporting and contradicting evidence  
-7. Assess evidence sufficiency  
-8. Detect contradictions and stale evidence  
-9. Generate structured recommendation memo (when safe)  
-10. Route uncertain cases into human review  
-11. Persist all actions in an audit timeline  
+1. Upload complaint and related artefacts
+2. Persist artifacts and enqueue ingestion
+3. Parse and segment documents asynchronously
+4. Extract structured claims using strict schema validation
+5. Map claims to Consumer Duty outcome areas
+6. Link supporting and contradicting evidence
+7. Assess evidence sufficiency
+8. Detect contradictions and stale evidence
+9. Generate structured recommendation memo (when safe)
+10. Route uncertain cases into human review
+11. Persist all actions in an audit timeline
 
 ---
 
@@ -107,8 +107,8 @@ The focus is not generating answers, but managing **evidence under uncertainty**
 The system enforces a strict state machine:
 
 ```text
-new → ingestion_pending → parsing → parsed → extraction → mapping → assessment → recommendation
-````
+new -> ingestion_pending -> parsing -> parsed -> extraction -> mapping -> assessment -> recommendation
+```
 
 Terminal paths:
 
@@ -123,7 +123,7 @@ Invalid transitions are explicitly rejected.
 **Review workflow states:**
 
 ```text
-unassigned → assigned → in_review → approved / overridden / escalated → closed
+unassigned -> assigned -> in_review -> approved / overridden / escalated -> closed
 ```
 
 ---
@@ -280,11 +280,11 @@ The system explicitly models uncertainty and failure:
 
 Failure handling:
 
-* schema validation failures → forced review
-* provider failures → conservative fallback or abstention
-* contradictory evidence → review routing
-* missing evidence → review routing
-* stale evidence → review routing
+* schema validation failures -> forced review
+* provider failures -> conservative fallback or abstention
+* contradictory evidence -> review routing
+* missing evidence -> review routing
+* stale evidence -> review routing
 
 **Fallback modes**
 
