@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   test:
     name: Frontend tests and build
@@ -40,7 +43,7 @@ jobs:
 
       - name: Run frontend tests
         run: |
-          pnpm test -- --run
+          pnpm test
 
       - name: Build frontend
         run: |

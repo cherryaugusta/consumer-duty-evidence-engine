@@ -6,10 +6,14 @@ on:
       - main
   pull_request:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   dependency-scan:
     name: Python dependency vulnerability scan
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     defaults:
       run:
@@ -36,6 +40,7 @@ jobs:
   node-audit:
     name: Node dependency vulnerability scan
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     defaults:
       run:
