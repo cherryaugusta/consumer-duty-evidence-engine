@@ -22,7 +22,7 @@ jobs:
           POSTGRES_USER: cdee
           POSTGRES_PASSWORD: cdee
         ports:
-          - 5432:5432
+          - 55432:5432
         options: >-
           --health-cmd "pg_isready -U cdee -d cdee"
           --health-interval 10s
@@ -45,7 +45,7 @@ jobs:
       POSTGRES_USER: cdee
       POSTGRES_PASSWORD: cdee
       POSTGRES_HOST: 127.0.0.1
-      POSTGRES_PORT: 5432
+      POSTGRES_PORT: 55432
       REDIS_URL: redis://127.0.0.1:6379/0
       CELERY_BROKER_URL: redis://127.0.0.1:6379/1
       CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/2
@@ -85,7 +85,7 @@ jobs:
         env:
           PGPASSWORD: cdee
         run: |
-          until pg_isready -h 127.0.0.1 -p 5432 -U cdee -d cdee; do
+          until pg_isready -h 127.0.0.1 -p 55432 -U cdee -d cdee; do
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
@@ -115,7 +115,7 @@ jobs:
         env:
           PGPASSWORD: cdee
         run: |
-          psql -h 127.0.0.1 -p 5432 -U cdee -d cdee -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql -h 127.0.0.1 -p 55432 -U cdee -d cdee -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
       - name: Run database migrations
         working-directory: backend
