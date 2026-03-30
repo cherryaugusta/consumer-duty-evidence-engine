@@ -15,8 +15,9 @@ It ingests complaints, disclosures, support transcripts, scripts, and policy mat
 ![Case detail with evidence sufficiency](docs/screenshots/03-case-detail-weak-support.png)  
 ![Evidence viewer with citations](docs/screenshots/04-evidence-viewer-citations.png)  
 ![Review queue](docs/screenshots/05-review-queue-contradictions.png)  
-![Review task override flow](docs/screenshots/06-review-task-override.png)  
-![Degraded mode](docs/screenshots/07-degraded-mode-provider-failure.png)  
+![Review task context](docs/screenshots/06a-review-task-context.png)  
+![Review task actions (assignment / approval / escalation)](docs/screenshots/06b-review-task-actions.png)  
+![Provider failure / insufficient evidence fallback](docs/screenshots/07-degraded-mode-provider-failure.png)  
 ![Metrics dashboard](docs/screenshots/08-metrics-dashboard.png)  
 ![Eval dashboard](docs/screenshots/09-eval-dashboard.png)  
 ![Audit timeline](docs/screenshots/10-audit-timeline.png)
@@ -51,11 +52,12 @@ The focus is not generating answers, but managing **evidence under uncertainty**
   - contradictory support  
   - stale support  
 - contradiction detection across multi-document case bundles  
-- human review queues with override, escalation, and audit logging  
+- human review queues with assignment, approval, escalation, partial override controls, and audit logging  
+- structured review-task action surface (assignment, approval, escalation, and override inputs)  
 - explicit state machine enforcing workflow correctness  
 - observable async pipelines with WebSocket updates  
 - regression-tested evaluation harness with 40+ benchmark cases  
-- degraded-mode fallback when model calls fail  
+- conservative fallback behaviour under provider failure or insufficient evidence  
 
 ---
 
@@ -104,59 +106,58 @@ The focus is not generating answers, but managing **evidence under uncertainty**
 
 The system enforces a strict state machine:
 
-```
-
+```text
 new → ingestion_pending → parsing → parsed → extraction → mapping → assessment → recommendation
-
-```
+````
 
 Terminal paths:
 
-- `approved`
-- `needs_review`
-- `escalated`
-- `failed`
-- `archived`
+* `approved`
+* `needs_review`
+* `escalated`
+* `failed`
+* `archived`
 
 Invalid transitions are explicitly rejected.
 
 **Review workflow states:**
 
-```
-
+```text
 unassigned → assigned → in_review → approved / overridden / escalated → closed
-
-````
+```
 
 ---
 
 ## Tech stack
 
 **Backend**
-- Django
-- Django REST Framework
-- PostgreSQL
-- Redis
-- Celery
-- Django Channels
-- pgvector
-- drf-spectacular (OpenAPI)
+
+* Django
+* Django REST Framework
+* PostgreSQL
+* Redis
+* Celery
+* Django Channels
+* pgvector
+* drf-spectacular (OpenAPI)
 
 **Frontend**
-- React
-- TypeScript
-- Vite
-- React Router
-- React Query
-- Zod
-- Zustand
+
+* React
+* TypeScript
+* Vite
+* React Router
+* React Query
+* Zod
+* Zustand
 
 **Tooling**
-- Pytest
-- Vitest
-- Ruff, Black, isort
-- Docker Compose
-- GitHub Actions CI
+
+* Pytest
+* Vitest
+* Ruff, Black, isort
+* Docker Compose
+* GitHub Actions CI
 
 ---
 
@@ -164,10 +165,10 @@ unassigned → assigned → in_review → approved / overridden / escalated → 
 
 ### Requirements
 
-- Python 3.14  
-- Node.js 20+  
-- pnpm  
-- Docker Desktop  
+* Python 3.14
+* Node.js 20+
+* pnpm
+* Docker Desktop
 
 ### Backend setup
 
@@ -175,7 +176,7 @@ unassigned → assigned → in_review → approved / overridden / escalated → 
 cd D:\AI-Projects\consumer-duty-evidence-engine
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r backend\requirements\dev.txt
-````
+```
 
 ### Start infrastructure
 
@@ -220,7 +221,7 @@ The project includes **12 seeded demo cases**, covering:
 * missing evidence scenarios
 * stale policy/script cases
 * schema failure simulation
-* provider failure (degraded mode)
+* provider failure simulation and safe fallback routing
 * clearly supported cases
 
 Seed data:
@@ -261,7 +262,7 @@ python infra/scripts/run_eval_suite.py
 
 Reports:
 
-```
+```text
 evals/reports/latest-report.json
 ```
 
@@ -280,15 +281,16 @@ The system explicitly models uncertainty and failure:
 Failure handling:
 
 * schema validation failures → forced review
-* provider failures → degraded mode
+* provider failures → conservative fallback or abstention
 * contradictory evidence → review routing
 * missing evidence → review routing
 * stale evidence → review routing
 
-**Degraded modes**
+**Fallback modes**
 
 * rules-only mode when model unavailable
 * source-only mode when generation unsafe
+* request-more-evidence routing when the case lacks enough support for a safe recommendation
 
 ---
 
@@ -296,13 +298,13 @@ Failure handling:
 
 OpenAPI schema:
 
-```
+```text
 /api/schema/
 ```
 
 Swagger UI:
 
-```
+```text
 /api/docs/
 ```
 
@@ -322,7 +324,7 @@ Key endpoints:
 
 See:
 
-```
+```text
 docs/architecture/
 docs/adr/
 docs/domain/
@@ -355,7 +357,7 @@ Key documents:
 * Built an AI-assisted evidence-review workflow with async ingestion, structured extraction, and human review routing
 * Implemented evidence sufficiency scoring and contradiction detection across multi-artifact case bundles
 * Designed an evaluation harness with regression datasets and measurable metrics
-* Added degraded-mode fallback and failure-aware routing
+* Added conservative fallback and failure-aware routing for provider failure and low-support cases
 * Exposed full audit trail, state transitions, and review actions through API and UI
 
 ---
