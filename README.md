@@ -2,24 +2,22 @@
 
 ## AI-assisted evidence review workflow for regulated financial-services artefacts
 
-Consumer Duty Evidence Engine is a Django/React portfolio project that simulates a high-accountability evidence-review workflow inspired by FCA Consumer Duty monitoring expectations.
-
-It ingests complaints, disclosures, support transcripts, scripts, and policy materials; extracts structured claims and outcome-relevant facts; maps them to Consumer Duty outcome areas; scores evidence sufficiency; flags unsupported or contradictory evidence; routes uncertain cases into analyst review; and produces audit-ready outputs with traceable citations, evaluation metrics, and observable workflow state.
+Consumer Duty Evidence Engine is a Django/React portfolio project that simulates a high-accountability evidence-review workflow inspired by FCA Consumer Duty monitoring expectations. It ingests complaints, disclosures, support transcripts, scripts, and policy materials; extracts structured claims and outcome-relevant facts; maps them to Consumer Duty outcome areas; scores evidence sufficiency; flags unsupported or contradictory evidence; routes uncertain cases into analyst review; and produces audit-ready outputs with traceable citations, evaluation metrics, and observable workflow state.
 
 ---
 
 ## Screenshots
 
-![Cases dashboard](docs/screenshots/01-cases-dashboard.png)  
-![New case intake](docs/screenshots/02-new-case-intake.png)  
-![Case detail with evidence sufficiency](docs/screenshots/03-case-detail-weak-support.png)  
-![Evidence viewer with citations](docs/screenshots/04-evidence-viewer-citations.png)  
-![Review queue](docs/screenshots/05-review-queue.png)  
-![Review task context](docs/screenshots/06a-review-task-context.png)  
-![Review task actions (assignment / approval / escalation)](docs/screenshots/06b-review-task-actions.png)  
-![Provider failure / insufficient evidence fallback](docs/screenshots/07-degraded-mode-provider-failure.png)  
-![Metrics dashboard](docs/screenshots/08-metrics-dashboard.png)  
-![Eval dashboard](docs/screenshots/09-eval-dashboard.png)  
+![Cases dashboard](docs/screenshots/01-cases-dashboard.png)
+![New case intake](docs/screenshots/02-new-case-intake.png)
+![Case detail with evidence sufficiency](docs/screenshots/03-case-detail-weak-support.png)
+![Evidence viewer with citations](docs/screenshots/04-evidence-viewer-citations.png)
+![Review queue](docs/screenshots/05-review-queue.png)
+![Review task detail](docs/screenshots/06a-review-task-context.png)
+![Review task actions](docs/screenshots/06b-review-task-actions.png)
+![Provider failure / insufficient evidence fallback](docs/screenshots/07-degraded-mode-provider-failure.png)
+![Metrics dashboard](docs/screenshots/08-metrics-dashboard.png)
+![Eval dashboard](docs/screenshots/09-eval-dashboard.png)
 ![Audit timeline](docs/screenshots/10-audit-timeline.png)
 
 ---
@@ -30,12 +28,12 @@ Most portfolio AI applications stop at retrieval or summarisation.
 
 This project is designed to demonstrate how AI operates inside a **controlled, auditable workflow** where outputs must be:
 
-- structured  
-- traceable  
-- reviewable  
-- auditable  
-- measurable  
-- safe under failure  
+* structured
+* traceable
+* reviewable
+* auditable
+* measurable
+* safe under failure
 
 The focus is not generating answers, but managing **evidence under uncertainty**.
 
@@ -43,21 +41,21 @@ The focus is not generating answers, but managing **evidence under uncertainty**
 
 ## What this project demonstrates
 
-- AI-assisted extraction with strict schema validation
-- rule-assisted outcome mapping to a constrained taxonomy
-- evidence sufficiency scoring:
-  - supported
-  - weak support
-  - missing support
-  - contradictory support
-  - stale support
-- contradiction detection across multi-document case bundles
-- human review queues with assignment, approval, escalation, partial override controls, and audit logging
-- structured review-task action surface (assignment, approval, escalation, and override inputs)
-- explicit state machine enforcing workflow correctness
-- observable async pipelines with WebSocket updates
-- regression-tested evaluation harness with 40+ benchmark cases
-- conservative fallback behaviour under provider failure or insufficient evidence
+* AI-assisted extraction with strict schema validation
+* rule-assisted outcome mapping to a constrained taxonomy
+* evidence sufficiency scoring:
+
+  * supported
+  * weak support
+  * missing support
+  * contradictory support
+  * stale support
+* contradiction detection across multi-document case bundles
+* human review queues with assignment, approval, escalation, override controls, and audit logging
+* explicit state machine enforcing workflow correctness
+* observable async pipelines with WebSocket updates
+* regression-tested evaluation harness with 40+ benchmark cases
+* conservative fallback behaviour under provider failure or insufficient evidence
 
 ---
 
@@ -66,23 +64,26 @@ The focus is not generating answers, but managing **evidence under uncertainty**
 **System type:** Django monolith with async workers and React frontend
 
 **Backend**
-- Django + Django REST Framework (API and orchestration)
-- PostgreSQL (source of truth)
-- Redis (cache, broker, Channels layer)
-- Celery (async task pipeline)
-- Django Channels (WebSockets)
+
+* Django + Django REST Framework (API and orchestration)
+* PostgreSQL (source of truth)
+* Redis (cache, broker, Channels layer)
+* Celery (async task pipeline)
+* Django Channels (WebSockets)
 
 **Frontend**
-- React + TypeScript + Vite
-- React Query (server state)
-- Zod (schema validation)
-- Zustand (client state)
+
+* React + TypeScript + Vite
+* React Query (server state)
+* Zod (schema validation)
+* Zustand (client state)
 
 **Supporting systems**
-- pgvector (limited retrieval support)
-- evaluation harness (synthetic datasets + regression runner)
-- audit/event system
-- observability and metrics layer
+
+* pgvector (limited retrieval support)
+* evaluation harness (synthetic datasets + regression runner)
+* audit/event system
+* observability and metrics layer
 
 ---
 
@@ -107,7 +108,7 @@ The focus is not generating answers, but managing **evidence under uncertainty**
 The system enforces a strict state machine:
 
 ```text
-new -> ingestion_pending -> parsing -> parsed -> extraction -> mapping -> assessment -> recommendation
+new → ingestion_pending → parsing → parsed → extraction → mapping → assessment → recommendation
 ```
 
 Terminal paths:
@@ -123,7 +124,7 @@ Invalid transitions are explicitly rejected.
 **Review workflow states:**
 
 ```text
-unassigned -> assigned -> in_review -> approved / overridden / escalated -> closed
+unassigned → assigned → in_review → approved / overridden / escalated → closed
 ```
 
 ---
@@ -162,6 +163,8 @@ unassigned -> assigned -> in_review -> approved / overridden / escalated -> clos
 ---
 
 ## Local setup
+
+The commands below reflect the Windows development environment used for this project.
 
 ### Requirements
 
@@ -280,17 +283,17 @@ The system explicitly models uncertainty and failure:
 
 Failure handling:
 
-* schema validation failures -> forced review
-* provider failures -> conservative fallback or abstention
-* contradictory evidence -> review routing
-* missing evidence -> review routing
-* stale evidence -> review routing
+* schema validation failures → forced review
+* provider failures → conservative fallback or abstention
+* contradictory evidence → review routing
+* missing evidence → review routing
+* stale evidence → review routing
 
 **Fallback modes**
 
 * rules-only mode when model unavailable
 * source-only mode when generation unsafe
-* request-more-evidence routing when the case lacks enough support for a safe recommendation
+* request-more-evidence routing when the case lacks sufficient support for a safe recommendation
 
 ---
 
